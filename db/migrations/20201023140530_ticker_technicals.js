@@ -7,8 +7,7 @@ exports.up = function (knex) {
       table.decimal("sma_200_day"),
       table.decimal("high_52_week"),
       table.decimal("low_52_week"),
-      table.decimal("average_volume_10_day"),
-      table.decimal("cagr_3_year"),
+      table.decimal("cagr_3_year", 8, 4),
       table.timestamp("created_at").defaultTo(knex.fn.now()),
       table.timestamp("updated_at").defaultTo(knex.fn.now()),
       table.boolean("is_deleted").defaultTo(false);

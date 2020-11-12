@@ -1,4 +1,4 @@
-const knex = require("../../config/knex");
+const knex = require("../config/knex");
 
 class TickerTechnicalsModel {
   constructor(id) {
@@ -23,7 +23,6 @@ class TickerTechnicalsModel {
         "ticker_technicals.sma_200_day",
         "ticker_technicals.high_52_week",
         "ticker_technicals.low_52_week",
-        "ticker_technicals.average_volume_10_day",
         "ticker_technicals.cagr_3_year",
         "ticker_technicals.sma_50_day"
       )
@@ -42,7 +41,6 @@ class TickerTechnicalsModel {
         "ticker_technicals.sma_200_day",
         "ticker_technicals.high_52_week",
         "ticker_technicals.low_52_week",
-        "ticker_technicals.average_volume_10_day",
         "ticker_technicals.cagr_3_year",
         "ticker_technicals.sma_50_day"
       )

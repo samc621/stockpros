@@ -42,25 +42,27 @@ exports.loadStocks = async () => {
       )
     )
     .subscribe(async json => {
-      // if (!(await new Ticker().checkIfTickerExists(json.Symbol))) {
-      //   const tickerDetails = await polygon.getTickerDetails(json.Symbol);
-      //   let data = _.pick(tickerDetails, [
-      //     "name",
-      //     "symbol",
-      //     "logo",
-      //     "country",
-      //     "exchange",
-      //     "industry",
-      //     "sector",
-      //     "marketcap"
-      //   ]);
-      //   data["market_cap"] = data["marketcap"];
-      //   delete data["marketcap"];
-      //   await new Ticker().create(data);
-      //   this.dailyStockUpdate(json.Symbol);
-      //   this.scheduleDailyStockUpdate(json.Symbol);
-      //   this.getTrades(json.Symbol);
-      // }
+      if (!(await new Ticker().checkIfTickerExists(json.Symbol))) {
+        const tickerDetails = await polygon.getTickerDetails(json.Symbol);
+        if (!_.isEmpty(tickerDetails)) {
+          let data = _.pick(tickerDetails, [
+            "name",
+            "symbol",
+            "logo",
+            "country",
+            "exchange",
+            "industry",
+            "sector",
+            "marketcap"
+          ]);
+          data["market_cap"] = data["marketcap"];
+          delete data["marketcap"];
+          await new Ticker().create(data);
+          this.dailyStockUpdate(json.Symbol);
+        }
+      }
+      this.scheduleDailyStockUpdate(json.Symbol);
+      this.getTrades(json.Symbol);
     });
 };
 
@@ -95,21 +97,10 @@ exports.dailyStockUpdate = async symbol => {
   let todaysValues = await polygon.getSnapshot(symbol);
   todaysValues = todaysValues.ticker.day;
 
-  const dateMinus10Days = moment().businessSubtract(10).format("YYYY-MM-DD");
   const dateMinus50Days = moment().businessSubtract(50).format("YYYY-MM-DD");
   const dateMinus200Days = moment().businessSubtract(200).format("YYYY-MM-DD");
   const dateMinus52Weeks = moment().subtract(52, "weeks").format("YYYY-MM-DD");
   const dateMinus3Years = moment().subtract(3, "years").format("YYYY-MM-DD");
-
-  let aggregates10Days = await polygon.getAggregates(
-    symbol,
-    1,
-    "day",
-    dateMinus10Days,
-    today
-  );
-  aggregates10Days.results.shift();
-  aggregates10Days.results.push(todaysValues);
 
   let aggregates50Days = await polygon.getAggregates(
     symbol,
@@ -161,10 +152,6 @@ exports.dailyStockUpdate = async symbol => {
   );
   const high_52_week = high(aggregates52Weeks.results.map(a => a.h));
   const low_52_week = low(aggregates52Weeks.results.map(a => a.l));
-  const average_volume_10_day = average(
-    aggregates10Days.results.map(a => a.v),
-    aggregates10Days.results.length
-  );
   const cagr_3_year =
     aggregates3Years.results.length === 3
       ? cagr(
@@ -179,7 +166,6 @@ exports.dailyStockUpdate = async symbol => {
     sma_200_day,
     high_52_week,
     low_52_week,
-    average_volume_10_day,
     cagr_3_year
   };
 
