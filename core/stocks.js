@@ -1,0 +1,198 @@
+const fs = require("fs");
+const request = require("request");
+const csv = require("csvtojson");
+const moment = require("moment-business-days");
+const _ = require("lodash");
+const schedule = require("node-schedule");
+
+const polygon = require("../services/polygon-io");
+
+const Ticker = require("../models/tickers");
+const TickerTechnical = require("../models/tickerTechnicals");
+
+const holidays = {
+  newYearsDay: "01-01-2020",
+  mlkDay: "01-20-2020",
+  washingtonsBirthday: "02-17-2020",
+  goodFriday: "04-10-2020",
+  memorialDay: "05-25-2020",
+  independenceDay: "07-03-2020",
+  laborDay: "09-07-2020",
+  thanksgivingDay: "11-26-2020",
+  christmasDay: "12-25-2020"
+};
+moment.updateLocale("us", {
+  holidays: Object.values(holidays),
+  holidayFormat: "MM-DD-YYYY"
+});
+
+exports.getTrades = symbol => {
+  polygon.sendWebhookMessage({ action: "subscribe", params: `T.${symbol}` });
+};
+
+exports.scheduleDailyStockUpdate = symbol => {
+  schedule.scheduleJob("0 16 * * 1-5", this.dailyStockUpdate(symbol));
+};
+
+exports.loadStocks = async () => {
+  csv()
+    .fromStream(
+      request.get(
+        "https://s3.amazonaws.com/rawstore.datahub.io/652de3c89c39dafdee912fd9cfb23c21.csv"
+      )
+    )
+    .subscribe(async json => {
+      // if (!(await new Ticker().checkIfTickerExists(json.Symbol))) {
+      //   const tickerDetails = await polygon.getTickerDetails(json.Symbol);
+      //   let data = _.pick(tickerDetails, [
+      //     "name",
+      //     "symbol",
+      //     "logo",
+      //     "country",
+      //     "exchange",
+      //     "industry",
+      //     "sector",
+      //     "marketcap"
+      //   ]);
+      //   data["market_cap"] = data["marketcap"];
+      //   delete data["marketcap"];
+      //   await new Ticker().create(data);
+      //   this.dailyStockUpdate(json.Symbol);
+      //   this.scheduleDailyStockUpdate(json.Symbol);
+      //   this.getTrades(json.Symbol);
+      // }
+    });
+};
+
+exports.newTrade = symbol => {
+  const strategies = fs.readdirSync(__dirname + "/../strategies");
+  strategies.map(strategy => {
+    require(__dirname + `/../strategies/${strategy}`).onNewTrade(symbol);
+  });
+};
+
+const average = (values, days) => {
+  const total = values.reduce((a, b) => {
+    return a + b;
+  }, 0);
+  return (total / days).toFixed(2);
+};
+
+const high = values => {
+  return Math.max(...values).toFixed(2);
+};
+
+const low = values => {
+  return Math.min(...values).toFixed(2);
+};
+
+const cagr = (bv, ev, years) => {
+  return Number(Math.pow(ev / bv, 1 / years) - 1).toFixed(4);
+};
+
+exports.dailyStockUpdate = async symbol => {
+  const today = moment().format("YYYY-MM-DD");
+  let todaysValues = await polygon.getSnapshot(symbol);
+  todaysValues = todaysValues.ticker.day;
+
+  const dateMinus10Days = moment().businessSubtract(10).format("YYYY-MM-DD");
+  const dateMinus50Days = moment().businessSubtract(50).format("YYYY-MM-DD");
+  const dateMinus200Days = moment().businessSubtract(200).format("YYYY-MM-DD");
+  const dateMinus52Weeks = moment().subtract(52, "weeks").format("YYYY-MM-DD");
+  const dateMinus3Years = moment().subtract(3, "years").format("YYYY-MM-DD");
+
+  let aggregates10Days = await polygon.getAggregates(
+    symbol,
+    1,
+    "day",
+    dateMinus10Days,
+    today
+  );
+  aggregates10Days.results.shift();
+  aggregates10Days.results.push(todaysValues);
+
+  let aggregates50Days = await polygon.getAggregates(
+    symbol,
+    1,
+    "day",
+    dateMinus50Days,
+    today
+  );
+  aggregates50Days.results.shift();
+  aggregates50Days.results.push(todaysValues);
+
+  let aggregates200Days = await polygon.getAggregates(
+    symbol,
+    1,
+    "day",
+    dateMinus200Days,
+    today
+  );
+  aggregates200Days.results.shift();
+  aggregates200Days.results.push(todaysValues);
+
+  let aggregates52Weeks = await polygon.getAggregates(
+    symbol,
+    1,
+    "day",
+    dateMinus52Weeks,
+    today
+  );
+  aggregates52Weeks.results.shift();
+  aggregates52Weeks.results.push(todaysValues);
+
+  let aggregates3Years = await polygon.getAggregates(
+    symbol,
+    365,
+    "day",
+    dateMinus3Years,
+    today
+  );
+  aggregates3Years.results.shift();
+  aggregates3Years.results.push(todaysValues);
+
+  const sma_50_day = average(
+    aggregates50Days.results.map(a => a.c),
+    aggregates50Days.results.length
+  );
+  const sma_200_day = average(
+    aggregates200Days.results.map(a => a.c),
+    aggregates200Days.results.length
+  );
+  const high_52_week = high(aggregates52Weeks.results.map(a => a.h));
+  const low_52_week = low(aggregates52Weeks.results.map(a => a.l));
+  const average_volume_10_day = average(
+    aggregates10Days.results.map(a => a.v),
+    aggregates10Days.results.length
+  );
+  const cagr_3_year =
+    aggregates3Years.results.length === 3
+      ? cagr(
+          aggregates3Years.results[0].o,
+          aggregates3Years.results[aggregates3Years.results.length - 1].c,
+          aggregates3Years.results.length
+        )
+      : null;
+
+  const data = {
+    sma_50_day,
+    sma_200_day,
+    high_52_week,
+    low_52_week,
+    average_volume_10_day,
+    cagr_3_year
+  };
+
+  let query = {};
+  query["tickers.symbol"] = symbol;
+  const tickerTechnical = await new TickerTechnical().findOne(query);
+  if (tickerTechnical) {
+    await new TickerTechnical(tickerTechnical.id).update(data);
+  } else {
+    const ticker = await new Ticker().findOne({ symbol });
+    await new TickerTechnical().create({
+      ticker_id: ticker.id,
+      ...data
+    });
+  }
+};
