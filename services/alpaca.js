@@ -1,11 +1,10 @@
 const Alpaca = require("@alpacahq/alpaca-trade-api");
 const config = require("config");
-const PositionsModel = require("../models/positions");
 const Position = require("../models/positions");
 
 const alpaca = new Alpaca({
   keyId: config.get("alpaca.paperApiKey"),
-  secretKey: config.get("alpaca.paperApikeySecret"),
+  secretKey: config.get("alpaca.paperApiKeySecret"),
   paper: true,
   usePolygon: true
 });
