@@ -1,4 +1,4 @@
-const knex = require("../../config/knex");
+const knex = require("../config/knex");
 
 class PositionsModel {
   constructor(id) {
@@ -31,9 +31,11 @@ class PositionsModel {
   }
 
   async checkIfPositionExists(symbol) {
-    return knex.raw(
-      `SELECT exists (SELECT 1 FROM ${this.tableName} WHERE symbol = ${symbol} LIMIT 1)`
-    );
+    return knex
+      .raw(
+        `SELECT exists (SELECT 1 FROM ${this.tableName} WHERE symbol = '${symbol}' LIMIT 1)`
+      )
+      .then(rows => rows.rows[0].exists);
   }
 
   async update(data) {

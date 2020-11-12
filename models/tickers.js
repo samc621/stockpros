@@ -1,4 +1,4 @@
-const knex = require("../../config/knex");
+const knex = require("../config/knex");
 
 class TickersModel {
   constructor(id) {
@@ -59,9 +59,11 @@ class TickersModel {
   }
 
   async checkIfTickerExists(symbol) {
-    return knex.raw(
-      `SELECT exists (SELECT 1 FROM ${this.tableName} WHERE symbol = ${symbol} LIMIT 1)`
-    );
+    return knex
+      .raw(
+        `SELECT exists (SELECT 1 FROM ${this.tableName} WHERE symbol = '${symbol}' LIMIT 1)`
+      )
+      .then(rows => rows.rows[0].exists);
   }
 
   async hardDelete() {
