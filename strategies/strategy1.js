@@ -13,7 +13,7 @@ const percentageDifference = (a, b) => {
 exports.onNewTrade = async symbol => {
   redis.get(symbol, async (err, price) => {
     try {
-      if (!price) {
+      if (!price || !(await alpaca.isMarketOpen())) {
         return;
       }
 
@@ -31,9 +31,9 @@ exports.onNewTrade = async symbol => {
           percentageDifference(price, position.avg_entry_price) >=
             targetAnnualReturn / 2
         ) {
-          const quantity = position.qty;
-          console.log("SELL ==> ", symbol, quantity);
-          // alpaca.createOrder(symbol, quantity, "sell");
+          const quantity = Number(position.qty);
+          console.log("sell ==> ", symbol, quantity);
+          await alpaca.createOrder(symbol, quantity, "sell");
         }
       } else {
         if (
@@ -45,17 +45,15 @@ exports.onNewTrade = async symbol => {
               targetAnnualReturn)
         ) {
           const account = await alpaca.getAccount();
-          const quantity = account.buying_power * (targetAnnualReturn / 2);
-          console.log("BUY ==> ", symbol, quantity);
-          // alpaca.createOrder(
-          //   symbol,
-          //   quantity,
-          //   "buy"
-          // );
+          const quantity = Math.floor(
+            (account.buying_power * (targetAnnualReturn / 2)) / price
+          );
+          console.log("buy ==> ", symbol, quantity);
+          await alpaca.createOrder(symbol, quantity, "buy");
         }
       }
     } catch (err) {
-      console.log(err);
+      console.log(err.message);
     }
   });
 };
