@@ -46,7 +46,7 @@ exports.loadStocks = async () => {
       try {
         if (!(await new Ticker().checkIfTickerExists(json.Symbol))) {
           const tickerDetails = await polygon.getTickerDetails(json.Symbol);
-          if (!_.isEmpty(tickerDetails)) {
+          if (tickerDetails) {
             let data = _.pick(tickerDetails, [
               "name",
               "symbol",
@@ -61,15 +61,15 @@ exports.loadStocks = async () => {
             delete data["marketcap"];
             await new Ticker().create(data);
             this.dailyStockUpdate(json.Symbol);
+            this.scheduleDailyStockUpdate(json.Symbol);
+            if (counter % 40 == 0) {
+              this.getTrades(json.Symbol);
+            }
           }
-        }
-        this.scheduleDailyStockUpdate(json.Symbol);
-        if (counter % 40 == 0) {
-          this.getTrades(json.Symbol);
         }
         counter++;
       } catch (err) {
-        console.log(err);
+        // console.log(err.message);
       }
     });
 };
@@ -197,6 +197,6 @@ exports.dailyStockUpdate = async symbol => {
       }
     }
   } catch (err) {
-    console.log(err);
+    console.log(err.message);
   }
 };

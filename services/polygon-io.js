@@ -41,9 +41,10 @@ exports.getTickerDetails = async symbol => {
     return response.data;
   } catch (err) {
     if (err.response.status === 404) {
-      return {};
+      throw new Error(`The details for ${symbol} can not be found.`);
+    } else {
+      throw new Error(err.message);
     }
-    throw new Error(err);
   }
 };
 
@@ -54,7 +55,7 @@ exports.getAggregates = async (symbol, multiplier, timespan, from, to) => {
     );
     return response.data;
   } catch (err) {
-    throw new Error(err);
+    throw new Error(err.message);
   }
 };
 
@@ -65,6 +66,10 @@ exports.getSnapshot = async symbol => {
     );
     return response.data;
   } catch (err) {
-    throw new Error(err);
+    if (err.response.status === 404) {
+      throw new Error(`The snapshot for ${symbol} can not be found.`);
+    } else {
+      throw new Error(err.message);
+    }
   }
 };
