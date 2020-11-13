@@ -11,7 +11,7 @@ module.exports = {
       password: config.get("db.password")
     },
     useNullAsDefault: true,
-    debug: true,
+    debug: false,
     migrations: {
       directory: "db/migrations",
       tableName: "knex_migrations"
