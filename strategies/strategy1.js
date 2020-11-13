@@ -12,35 +12,50 @@ const percentageDifference = (a, b) => {
 
 exports.onNewTrade = async symbol => {
   redis.get(symbol, async (err, price) => {
-    const tickerTechnical = await new TickerTechnical().findOne({ symbol });
+    try {
+      if (!price) {
+        return;
+      }
 
-    if (await new Position().checkIfPositionExists(symbol)) {
-      const position = await alpaca.getPositionForSymbol(symbol);
-      if (
-        percentageDifference(tickerTechnical.sma_50_day, price) >=
-          targetAnnualReturn / 2 ||
-        price >= tickerTechnical.high_52_week ||
-        percentageDifference(price, position.avg_entry_price) >=
-          targetAnnualReturn / 2
-      ) {
-        alpaca.createOrder(symbol, position.qty, "sell");
+      const tickerTechnical = await new TickerTechnical().findOne({ symbol });
+      if (!tickerTechnical) {
+        return;
       }
-    } else {
-      if (
-        (price < tickerTechnical.sma_50_day &&
-          percentageDifference(price, tickerTechnical.sma_50_day) >=
-            targetAnnualReturn / 2) ||
-        (price >= tickerTechnical.sma_50_day &&
-          percentageDifference(price, tickerTechnical.high_52_week) >=
-            targetAnnualReturn)
-      ) {
-        const account = await alpaca.getAccount();
-        alpaca.createOrder(
-          symbol,
-          account.buying_power * (targetAnnualReturn / 2),
-          "buy"
-        );
+
+      if (await new Position().checkIfPositionExists(symbol)) {
+        const position = await alpaca.getPositionForSymbol(symbol);
+        if (
+          percentageDifference(tickerTechnical.sma_50_day, price) >=
+            targetAnnualReturn / 2 ||
+          price >= tickerTechnical.high_52_week ||
+          percentageDifference(price, position.avg_entry_price) >=
+            targetAnnualReturn / 2
+        ) {
+          const quantity = position.qty;
+          console.log("SELL ==> ", symbol, quantity);
+          // alpaca.createOrder(symbol, quantity, "sell");
+        }
+      } else {
+        if (
+          (price < tickerTechnical.sma_50_day &&
+            percentageDifference(price, tickerTechnical.sma_50_day) >=
+              targetAnnualReturn / 2) ||
+          (price >= tickerTechnical.sma_50_day &&
+            percentageDifference(price, tickerTechnical.high_52_week) >=
+              targetAnnualReturn)
+        ) {
+          const account = await alpaca.getAccount();
+          const quantity = account.buying_power * (targetAnnualReturn / 2);
+          console.log("BUY ==> ", symbol, quantity);
+          // alpaca.createOrder(
+          //   symbol,
+          //   quantity,
+          //   "buy"
+          // );
+        }
       }
+    } catch (err) {
+      console.log(err);
     }
   });
 };
