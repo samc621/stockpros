@@ -60,11 +60,13 @@ exports.loadStocks = async () => {
             data["market_cap"] = data["marketcap"];
             delete data["marketcap"];
             await new Ticker().create(data);
-            this.dailyStockUpdate(json.Symbol);
-            this.scheduleDailyStockUpdate(json.Symbol);
-            if (counter % 40 == 0) {
-              this.getTrades(json.Symbol);
-            }
+          }
+        }
+        if (await new Ticker().checkIfTickerExists(json.Symbol)) {
+          this.dailyStockUpdate(json.Symbol);
+          this.scheduleDailyStockUpdate(json.Symbol);
+          if (counter % 40 == 0) {
+            this.getTrades(json.Symbol);
           }
         }
         counter++;
@@ -197,6 +199,6 @@ exports.dailyStockUpdate = async symbol => {
       }
     }
   } catch (err) {
-    console.log(err.message);
+    // console.log(err.message);
   }
 };
