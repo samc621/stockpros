@@ -1,14 +1,14 @@
 const chai = require("chai");
 const expect = chai.expect;
 
-const stocks = require("../core/stocks");
+const holidays = require("../helpers/holidays");
 
 chai.should();
 
 describe("Holidays", () => {
   describe("2020", () => {
     it("Should return the stock market holidays for 2020", () => {
-      let result = stocks.calculateHolidays(2020);
+      let result = holidays.calculateHolidays(2020);
 
       expect(result).to.have.property("newYearsDay").to.equal("01-01-2020");
       expect(result).to.have.property("mlkDay").to.equal("01-20-2020");
@@ -26,7 +26,7 @@ describe("Holidays", () => {
 
   describe("2021", () => {
     it("Should return the stock market holidays for 2021", () => {
-      let result = stocks.calculateHolidays(2021);
+      let result = holidays.calculateHolidays(2021);
 
       expect(result).to.have.property("newYearsDay").to.equal("01-01-2021");
       expect(result).to.have.property("mlkDay").to.equal("01-18-2021");
@@ -44,7 +44,7 @@ describe("Holidays", () => {
 
   describe("2022", () => {
     it("Should return the stock market holidays for 2022", () => {
-      let result = stocks.calculateHolidays(2022);
+      let result = holidays.calculateHolidays(2022);
 
       expect(result).to.have.property("newYearsDay").to.equal(null);
       expect(result).to.have.property("mlkDay").to.equal("01-17-2022");

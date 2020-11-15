@@ -1,14 +1,11 @@
 const redis = require("../services/redis");
 const alpaca = require("../services/alpaca");
+const { percentageDifference } = require("../helpers/math");
 
 const Position = require("../models/positions");
 const TickerTechnical = require("../models/tickerTechnicals");
 
 const targetAnnualReturn = 0.2;
-
-const percentageDifference = (a, b) => {
-  return (b - a) / a;
-};
 
 exports.onNewTrade = async symbol => {
   redis.get(symbol, async (err, price) => {
