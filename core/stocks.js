@@ -41,8 +41,10 @@ exports.loadStocks = async () => {
           "NFLX",
           "AMZN",
           "MSFT",
-          "BABA",
-          "JD"
+          "ADBE",
+          "INTC",
+          "IBM",
+          "NVDA"
         ];
 
         if (!(await new Ticker().checkIfTickerExists(json.Symbol))) {

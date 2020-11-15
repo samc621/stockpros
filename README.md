@@ -26,7 +26,7 @@ Use the `.env.example` file to configure the environment variables for a given e
 
 Strategies go into the `/strategies` directory. StockPros comes with a default strategy.
 
-On start, StockPros will load the S&P 500 stocks into the DB and then begin running **all** strategies in the directory on them.
+On start, StockPros will load the S&P 500 stocks into the DB and then begin running **all** strategies in the directory on the selected watchlist.
 
 ## Start the server
 
