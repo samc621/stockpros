@@ -26,7 +26,6 @@ exports.scheduleDailyStockUpdate = symbol => {
 };
 
 exports.loadStocks = async () => {
-  let counter = 0;
   csv()
     .fromStream(
       request.get(
@@ -35,6 +34,17 @@ exports.loadStocks = async () => {
     )
     .subscribe(async json => {
       try {
+        const watchlist = [
+          "AAPL",
+          "GOOG",
+          "FB",
+          "NFLX",
+          "AMZN",
+          "MSFT",
+          "BABA",
+          "JD"
+        ];
+
         if (!(await new Ticker().checkIfTickerExists(json.Symbol))) {
           const tickerDetails = await polygon.getTickerDetails(json.Symbol);
           if (tickerDetails) {
@@ -56,11 +66,10 @@ exports.loadStocks = async () => {
         if (await new Ticker().checkIfTickerExists(json.Symbol)) {
           this.dailyStockUpdate(json.Symbol);
           this.scheduleDailyStockUpdate(json.Symbol);
-          if (counter % 40 == 0) {
+          if (watchlist.includes(json.Symbol)) {
             this.getTrades(json.Symbol);
           }
         }
-        counter++;
       } catch (err) {
         console.error(err.message);
       }
