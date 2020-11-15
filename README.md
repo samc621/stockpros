@@ -4,9 +4,9 @@ StockPros is an interface for implementing custom trading strategies. Users can 
 
 ## Services
 
-- [PostgreSQL] (https://postgresql.org) - SQL database
-- [Alpaca] (https://alpaca.markets) - for live/paper trading
-- [Polygon] (https://polygon.io) - for market data
+- [PostgreSQL](https://postgresql.org) - SQL database
+- [Alpaca](https://alpaca.markets) - for live/paper trading
+- [Polygon](https://polygon.io) - for market data
   - Polygon data is free with a live Alpaca trading account. If you set a Polygon API key in the environment variables (see below), it be used, otherwise the live Alpaca API key will be used.
 
 ## Installation
