@@ -11,7 +11,7 @@ StockPros is an interface for implementing custom trading strategies. Users can 
 
 ## Installation
 
-Use the `.env.example` file to configure the environment variables for a given environment e.g. `local`, `development`, `staging`, or `production`.
+Use the `.env.example` file to configure the environment variables for a given environment e.g. `.env.local`, `.env.development`, `.env.staging`, or `.env.production`.
 
 ### Set the environment
 
