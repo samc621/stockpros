@@ -15,5 +15,8 @@ module.exports = {
     user: process.env.DB_USERNAME,
     database: process.env.DB_NAME,
     password: process.env.DB_PASSWORD
+  },
+  polygon: {
+    apiKey: process.env.POLYGON_API_KEY
   }
 };

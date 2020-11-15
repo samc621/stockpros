@@ -13,7 +13,10 @@ ws.onopen = () => {
   ws.send(
     JSON.stringify({
       action: "auth",
-      params: config.get("alpaca.liveApiKey")
+      params:
+        config.get("polygon.apiKey") !== ""
+          ? config.get("polygon.apiKey")
+          : config.get("alpaca.liveApiKey")
     })
   );
 };
