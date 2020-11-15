@@ -62,7 +62,7 @@ exports.loadStocks = async () => {
         }
         counter++;
       } catch (err) {
-        // console.log(err.message);
+        console.error(err.message);
       }
     });
 };
@@ -171,6 +171,6 @@ exports.dailyStockUpdate = async symbol => {
       }
     }
   } catch (err) {
-    // console.log(err.message);
+    console.error(err.message);
   }
 };

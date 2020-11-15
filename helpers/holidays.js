@@ -41,7 +41,6 @@ const goodFriday = year => {
   };
 
   if (!easter[year]) {
-    console.log(`No Good Friday calculation available for ${year}`);
     return null;
   }
 

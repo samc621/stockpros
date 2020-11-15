@@ -41,7 +41,7 @@ ws.onOrderUpdate(async message => {
     quantity = position.quantity -= qty;
 
     if (quantity < 0) {
-      console.log("The quantity should never go negative.");
+      console.error("The quantity should never go negative.");
     } else if (quantity == 0) {
       await new Position(position.id).hardDelete();
     } else {

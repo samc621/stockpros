@@ -9,7 +9,7 @@ function connectToDB() {
     knex.raw("select 1+1 as result").catch(err => {
       console.error("Couldn't connect to DB: ", err);
       retries -= 1;
-      console.log(`Retries left: ${retries}`);
+      console.error(`Retries left: ${retries}`);
       setTimeout(connectToDB, 5000);
     });
     break;
