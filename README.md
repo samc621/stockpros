@@ -5,8 +5,9 @@ StockPros is an interface for implementing custom trading strategies. Users can 
 ## Services
 
 - [PostgreSQL](https://postgresql.org) - SQL database
-- [Alpaca](https://alpaca.markets) - for live/paper trading
-- [Polygon](https://polygon.io) - for market data
+- [Redis]("https://redis.io") - in-memory data store
+- [Alpaca](https://alpaca.markets) - live/paper trading
+- [Polygon](https://polygon.io) - market data
   - Polygon data is free with a live Alpaca trading account. If you set a Polygon API key in the environment variables (see below), it be used, otherwise the live Alpaca API key will be used.
 
 ## Installation
@@ -20,6 +21,12 @@ Use the `.env.example` file to configure the environment variables for a given e
 ## Unit Testing
 
 `$ npm test`
+
+## Strategy Creation
+
+Strategies go into the `/strategies` directory. StockPros comes with a default strategy.
+
+On start, StockPros will load the S&P 500 stocks into the DB and then begin running **all** strategies in the directory on them.
 
 ## Start the server
 
