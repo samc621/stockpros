@@ -20,3 +20,5 @@ exports.cagr = (bv, ev, years) => {
 exports.percentageDifference = (a, b) => {
   return (b - a) / a;
 };
+
+exports.everyNth = (arr, nth) => arr.filter((e, i) => i % nth === nth - 1);

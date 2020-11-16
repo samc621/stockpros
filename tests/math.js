@@ -47,4 +47,16 @@ describe("Math", () => {
       expect(result).to.equal(-0.05);
     });
   });
+
+  describe("Every Nth", () => {
+    it("Should return every nth value from the integer set", () => {
+      let result = math.everyNth(integers, 2);
+
+      expect(result[0]).to.equal(6);
+      expect(result[1]).to.equal(12);
+      expect(result[2]).to.equal(20);
+      expect(result[3]).to.equal(2);
+      expect(result[4]).to.equal(4);
+    });
+  });
 });
