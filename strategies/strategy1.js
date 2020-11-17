@@ -34,7 +34,7 @@ exports.executeStategy = async (
           targetAnnualReturn / 2
       ) {
         const quantity = Number(pst.qty);
-        if (!backtest) {
+        if (!backtest && (await alpaca.isMarketOpen())) {
           console.log("sell ==> ", symbol, quantity);
           await alpaca.createOrder(symbol, quantity, "sell");
         } else {
@@ -58,7 +58,7 @@ exports.executeStategy = async (
         const quantity = Math.floor(
           (acct.buying_power * (targetAnnualReturn / 2)) / price
         );
-        if (!backtest) {
+        if (!backtest && (await alpaca.isMarketOpen())) {
           console.log("buy ==> ", symbol, quantity);
           await alpaca.createOrder(symbol, quantity, "buy");
         } else {

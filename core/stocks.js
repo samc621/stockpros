@@ -20,7 +20,6 @@ const alpaca = require("../services/alpaca");
 const Ticker = require("../models/tickers");
 const TickerTechnical = require("../models/tickerTechnicals");
 const OHLCData = require("../models/ohlcData");
-const account = require("@alpacahq/alpaca-trade-api/lib/resources/account");
 
 const getTrades = symbol => {
   polygon.sendWebhookMessage({ action: "subscribe", params: `T.${symbol}` });
@@ -136,7 +135,7 @@ exports.loadStocks = async () => {
 exports.newTrade = async symbol => {
   redis.get(symbol, async (err, price) => {
     try {
-      if (!price || !(await alpaca.isMarketOpen())) {
+      if (!price) {
         return;
       }
 
