@@ -4,169 +4,23 @@ const csv = require("csvtojson");
 const moment = require("moment-business-days");
 const _ = require("lodash");
 const schedule = require("node-schedule");
-const { average, high, low, cagr } = require("../helpers/math");
+const { average, high, low, cagr, everyNth } = require("../helpers/math");
 const { calculateHolidays } = require("../helpers/holidays");
 
 const polygon = require("../services/polygon-io");
 
 const Ticker = require("../models/tickers");
 const TickerTechnical = require("../models/tickerTechnicals");
+const OHLCData = require("../models/ohlcData");
 
-moment.updateLocale("us", {
-  holidays: Object.values(calculateHolidays(new Date().getFullYear())),
-  holidayFormat: "MM-DD-YYYY"
-});
-
-exports.getTrades = symbol => {
+const getTrades = symbol => {
   polygon.sendWebhookMessage({ action: "subscribe", params: `T.${symbol}` });
 };
 
-exports.scheduleDailyStockUpdate = symbol => {
-  schedule.scheduleJob("0 16 * * 1-5", this.dailyStockUpdate(symbol));
-};
-
-exports.loadStocks = async () => {
-  csv()
-    .fromStream(
-      request.get(
-        "https://s3.amazonaws.com/rawstore.datahub.io/652de3c89c39dafdee912fd9cfb23c21.csv"
-      )
-    )
-    .subscribe(async json => {
-      try {
-        const watchlist = [
-          "AAPL",
-          "GOOG",
-          "FB",
-          "NFLX",
-          "AMZN",
-          "MSFT",
-          "ADBE",
-          "INTC",
-          "IBM",
-          "NVDA"
-        ];
-
-        if (!(await new Ticker().checkIfTickerExists(json.Symbol))) {
-          const tickerDetails = await polygon.getTickerDetails(json.Symbol);
-          if (tickerDetails) {
-            let data = _.pick(tickerDetails, [
-              "name",
-              "symbol",
-              "logo",
-              "country",
-              "exchange",
-              "industry",
-              "sector",
-              "marketcap"
-            ]);
-            data["market_cap"] = data["marketcap"];
-            delete data["marketcap"];
-            await new Ticker().create(data);
-          }
-        }
-        if (await new Ticker().checkIfTickerExists(json.Symbol)) {
-          this.dailyStockUpdate(json.Symbol);
-          this.scheduleDailyStockUpdate(json.Symbol);
-          if (watchlist.includes(json.Symbol)) {
-            this.getTrades(json.Symbol);
-          }
-        }
-      } catch (err) {
-        console.error(err.message);
-      }
-    });
-};
-
-exports.newTrade = symbol => {
-  const strategies = fs.readdirSync(__dirname + "/../strategies");
-  strategies.map(strategy => {
-    require(__dirname + `/../strategies/${strategy}`).onNewTrade(symbol);
-  });
-};
-
-exports.dailyStockUpdate = async symbol => {
+const dailyStockUpdate = async symbol => {
   try {
-    const today = moment().format("YYYY-MM-DD");
-    let todaysValues = await polygon.getSnapshot(symbol);
-    todaysValues = todaysValues.ticker.day;
-
-    const dateMinus50Days = moment().businessSubtract(50).format("YYYY-MM-DD");
-    const dateMinus200Days = moment()
-      .businessSubtract(200)
-      .format("YYYY-MM-DD");
-    const dateMinus52Weeks = moment()
-      .subtract(52, "weeks")
-      .format("YYYY-MM-DD");
-    const dateMinus3Years = moment().subtract(3, "years").format("YYYY-MM-DD");
-
-    let aggregates50Days = await polygon.getAggregates(
-      symbol,
-      1,
-      "day",
-      dateMinus50Days,
-      today
-    );
-    aggregates50Days.results.shift();
-    aggregates50Days.results.push(todaysValues);
-
-    let aggregates200Days = await polygon.getAggregates(
-      symbol,
-      1,
-      "day",
-      dateMinus200Days,
-      today
-    );
-    aggregates200Days.results.shift();
-    aggregates200Days.results.push(todaysValues);
-
-    let aggregates52Weeks = await polygon.getAggregates(
-      symbol,
-      1,
-      "day",
-      dateMinus52Weeks,
-      today
-    );
-    aggregates52Weeks.results.shift();
-    aggregates52Weeks.results.push(todaysValues);
-
-    let aggregates3Years = await polygon.getAggregates(
-      symbol,
-      365,
-      "day",
-      dateMinus3Years,
-      today
-    );
-    aggregates3Years.results.shift();
-    aggregates3Years.results.push(todaysValues);
-
-    const sma_50_day = average(
-      aggregates50Days.results.map(a => a.c),
-      aggregates50Days.results.length
-    );
-    const sma_200_day = average(
-      aggregates200Days.results.map(a => a.c),
-      aggregates200Days.results.length
-    );
-    const high_52_week = high(aggregates52Weeks.results.map(a => a.h));
-    const low_52_week = low(aggregates52Weeks.results.map(a => a.l));
-    const cagr_3_year =
-      aggregates3Years.results.length === 3
-        ? cagr(
-            aggregates3Years.results[0].o,
-            aggregates3Years.results[aggregates3Years.results.length - 1].c,
-            aggregates3Years.results.length
-          )
-        : null;
-
-    const data = {
-      sma_50_day,
-      sma_200_day,
-      high_52_week,
-      low_52_week,
-      cagr_3_year
-    };
-
+    const date = new Date();
+    const data = await this.stockCalcs(date, symbol);
     let query = {};
     query["tickers.symbol"] = symbol;
     const tickerTechnical = await new TickerTechnical().findOne(query);
@@ -181,7 +35,203 @@ exports.dailyStockUpdate = async symbol => {
         });
       }
     }
+
+    const yesterday = moment().subtract(1, "day").format("YYYY-MM-DD");
+    const yesterdayMinus5Years = moment(yesterday)
+      .subtract(5, "years")
+      .format("YYYY-MM-DD");
+    const yesterdaysOHLC = await polygon.getDailyPrices(symbol, yesterday);
+    await new OHLCData().create({
+      symbol,
+      timestamp: yesterday,
+      open: yesterdaysOHLC.open,
+      high: yesterdaysOHLC.high,
+      low: yesterdaysOHLC.low,
+      close: yesterdaysOHLC.close
+    });
+
+    const oldOHLCs = await new OHLCData().find(
+      { symbol },
+      null,
+      yesterdayMinus5Years
+    );
+    oldOHLCs.map(async ohlc => {
+      await new OHLCData(ohlc.id).hardDelete();
+    });
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+const scheduleDailyStockUpdate = symbol => {
+  schedule.scheduleJob("0 16 * * 1-5", dailyStockUpdate(symbol));
+};
+
+exports.loadStocks = async () => {
+  const watchlist = [
+    "AAPL",
+    "GOOG",
+    "FB",
+    "NFLX",
+    "AMZN",
+    "MSFT",
+    "ADBE",
+    "INTC",
+    "IBM",
+    "NVDA"
+  ];
+
+  require("../strategies/strategy1").backtestSymbol(watchlist[0]);
+
+  // csv()
+  //   .fromStream(
+  //     request.get(
+  //       "https://s3.amazonaws.com/rawstore.datahub.io/652de3c89c39dafdee912fd9cfb23c21.csv"
+  //     )
+  //   )
+  //   .subscribe(async json => {
+  //     try {
+  //       if (!(await new Ticker().checkIfTickerExists(json.Symbol))) {
+  //         const tickerDetails = await polygon.getTickerDetails(json.Symbol);
+  //         if (tickerDetails) {
+  //           let data = _.pick(tickerDetails, [
+  //             "name",
+  //             "symbol",
+  //             "logo",
+  //             "country",
+  //             "exchange",
+  //             "industry",
+  //             "sector",
+  //             "marketcap"
+  //           ]);
+  //           data["market_cap"] = data["marketcap"];
+  //           delete data["marketcap"];
+  //           await new Ticker().create(data);
+  //         }
+  //       }
+  //       if (await new Ticker().checkIfTickerExists(json.Symbol)) {
+  //         if (watchlist.includes(json.Symbol)) {
+  //           if (!(await new OHLCData().checkIfOHLCLoaded(json.Symbol))) {
+  //             await loadOHLC(json.Symbol);
+  //           }
+  //           if (await new OHLCData().checkIfOHLCLoaded(json.Symbol)) {
+  //             scheduleDailyStockUpdate(json.Symbol);
+  //             getTrades(json.Symbol);
+  //           }
+  //         }
+  //       }
+  //     } catch (err) {
+  //       console.error(err.message);
+  //     }
+  //   });
+};
+
+exports.newTrade = symbol => {
+  const strategies = fs.readdirSync(__dirname + "/../strategies");
+  strategies.map(strategy => {
+    require(__dirname + `/../strategies/${strategy}`).onNewTrade(symbol);
+  });
+};
+
+exports.stockCalcs = async (dt, symbol) => {
+  try {
+    moment.updateLocale("us", {
+      holidays: Object.values(calculateHolidays(new Date(dt).getFullYear())),
+      holidayFormat: "MM-DD-YYYY"
+    });
+
+    const date = moment(dt).format("YYYY-MM-DD");
+
+    const dateMinus50Days = moment(date)
+      .businessSubtract(50)
+      .format("YYYY-MM-DD");
+    const dateMinus200Days = moment(date)
+      .businessSubtract(200)
+      .format("YYYY-MM-DD");
+    const dateMinus52Weeks = moment(date)
+      .subtract(52, "weeks")
+      .format("YYYY-MM-DD");
+    const dateMinus3Years = moment(date)
+      .subtract(3, "years")
+      .format("YYYY-MM-DD");
+
+    let aggregates50Days = await new OHLCData().find(
+      { symbol },
+      dateMinus50Days,
+      date
+    );
+    let aggregates200Days = await new OHLCData().find(
+      { symbol },
+      dateMinus200Days,
+      date
+    );
+    let aggregates52Weeks = await new OHLCData().find(
+      { symbol },
+      dateMinus52Weeks,
+      date
+    );
+    let aggregates3Years = await new OHLCData().find(
+      { symbol },
+      dateMinus3Years,
+      date
+    );
+
+    const sma_50_day = average(
+      aggregates50Days.map(a => a.close),
+      aggregates50Days.length
+    );
+    const sma_200_day = average(
+      aggregates200Days.map(a => a.close),
+      aggregates200Days.length
+    );
+    const high_52_week = high(aggregates52Weeks.map(a => a.high));
+    const low_52_week = low(aggregates52Weeks.map(a => a.low));
+    const cagr_3_year = cagr(
+      aggregates3Years[0].open,
+      aggregates3Years[aggregates3Years.length - 1].close,
+      3
+    );
+
+    const data = {
+      sma_50_day,
+      sma_200_day,
+      high_52_week,
+      low_52_week,
+      cagr_3_year
+    };
+
+    return data;
   } catch (err) {
     console.error(err.message);
+  }
+};
+
+const loadOHLC = async symbol => {
+  try {
+    const today = moment().format("YYYY-MM-DD");
+    const todayMinus5Years = moment(today)
+      .subtract(5, "years")
+      .format("YYYY-MM-DD");
+
+    const aggregates = await polygon.getAggregates(
+      symbol,
+      1,
+      "day",
+      todayMinus5Years,
+      today
+    );
+
+    await aggregates.results.map(async agg => {
+      await new OHLCData().create({
+        symbol,
+        timestamp: moment(agg.t).format("YYYY-MM-DD"),
+        open: agg.o,
+        high: agg.h,
+        low: agg.l,
+        close: agg.c
+      });
+    });
+  } catch (err) {
+    throw new Error(err.message);
   }
 };

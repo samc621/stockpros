@@ -62,17 +62,13 @@ exports.getAggregates = async (symbol, multiplier, timespan, from, to) => {
   }
 };
 
-exports.getSnapshot = async symbol => {
+exports.getDailyPrices = async (symbol, date) => {
   try {
     const response = await axios.get(
-      `${baseUrl}/v2/snapshot/locale/us/markets/stocks/tickers/${symbol}?${apiKey}`
+      `${baseUrl}/v1/open-close/${symbol}/${date}?${apiKey}`
     );
     return response.data;
   } catch (err) {
-    if (err.response.status === 404) {
-      throw new Error(`The snapshot for ${symbol} can not be found.`);
-    } else {
-      throw new Error(err.message);
-    }
+    throw new Error(err.message);
   }
 };
