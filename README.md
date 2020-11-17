@@ -26,8 +26,44 @@ Use the `.env.example` file to configure the environment variables for a given e
 
 Strategies go into the `/strategies` directory. StockPros comes with a default strategy.
 
+All strategies should contain an `executeStategy` method which codifies the strategy itself.
+
 On start, StockPros will load the S&P 500 stocks into the DB and then begin running **all** strategies in the directory on the selected watchlist.
 
 ## Start the server
 
 `$ npm start`
+
+## Backtesting
+
+The `executeStrategy` method has some optional params used for backtesting:
+
+- `backtest` (Boolean) - set to true for backtesting
+- `stockCalcs` (Object) - the point-in-time calculations which are normally stored in the DB
+
+```
+{
+  sma_50_day,
+  sma_200_day,
+  high_52_week,
+  low_52_week,
+  cagr_3_year
+};
+```
+
+- `position` (Object) - the point-in-time position details
+
+```
+{
+  avg_entry_price,
+  qty
+};
+```
+
+- `account` (Object) - the point-in-time account details
+
+```
+{
+  buying_power
+}
+```

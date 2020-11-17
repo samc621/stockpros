@@ -1,17 +1,26 @@
+const redis = require("../services/redis");
 const fs = require("fs");
 const request = require("request");
 const csv = require("csvtojson");
 const moment = require("moment-business-days");
 const _ = require("lodash");
 const schedule = require("node-schedule");
-const { average, high, low, cagr, everyNth } = require("../helpers/math");
+const {
+  average,
+  high,
+  low,
+  cagr,
+  percentageDifference
+} = require("../helpers/math");
 const { calculateHolidays } = require("../helpers/holidays");
 
 const polygon = require("../services/polygon-io");
+const alpaca = require("../services/alpaca");
 
 const Ticker = require("../models/tickers");
 const TickerTechnical = require("../models/tickerTechnicals");
 const OHLCData = require("../models/ohlcData");
+const account = require("@alpacahq/alpaca-trade-api/lib/resources/account");
 
 const getTrades = symbol => {
   polygon.sendWebhookMessage({ action: "subscribe", params: `T.${symbol}` });
@@ -20,7 +29,7 @@ const getTrades = symbol => {
 const dailyStockUpdate = async symbol => {
   try {
     const date = new Date();
-    const data = await this.stockCalcs(date, symbol);
+    const data = await stockCalcs(date, symbol);
     let query = {};
     query["tickers.symbol"] = symbol;
     const tickerTechnical = await new TickerTechnical().findOne(query);
@@ -59,7 +68,7 @@ const dailyStockUpdate = async symbol => {
       await new OHLCData(ohlc.id).hardDelete();
     });
   } catch (err) {
-    throw new Error(err.message);
+    console.error(err.message);
   }
 };
 
@@ -81,59 +90,70 @@ exports.loadStocks = async () => {
     "NVDA"
   ];
 
-  require("../strategies/strategy1").backtestSymbol(watchlist[0]);
-
-  // csv()
-  //   .fromStream(
-  //     request.get(
-  //       "https://s3.amazonaws.com/rawstore.datahub.io/652de3c89c39dafdee912fd9cfb23c21.csv"
-  //     )
-  //   )
-  //   .subscribe(async json => {
-  //     try {
-  //       if (!(await new Ticker().checkIfTickerExists(json.Symbol))) {
-  //         const tickerDetails = await polygon.getTickerDetails(json.Symbol);
-  //         if (tickerDetails) {
-  //           let data = _.pick(tickerDetails, [
-  //             "name",
-  //             "symbol",
-  //             "logo",
-  //             "country",
-  //             "exchange",
-  //             "industry",
-  //             "sector",
-  //             "marketcap"
-  //           ]);
-  //           data["market_cap"] = data["marketcap"];
-  //           delete data["marketcap"];
-  //           await new Ticker().create(data);
-  //         }
-  //       }
-  //       if (await new Ticker().checkIfTickerExists(json.Symbol)) {
-  //         if (watchlist.includes(json.Symbol)) {
-  //           if (!(await new OHLCData().checkIfOHLCLoaded(json.Symbol))) {
-  //             await loadOHLC(json.Symbol);
-  //           }
-  //           if (await new OHLCData().checkIfOHLCLoaded(json.Symbol)) {
-  //             scheduleDailyStockUpdate(json.Symbol);
-  //             getTrades(json.Symbol);
-  //           }
-  //         }
-  //       }
-  //     } catch (err) {
-  //       console.error(err.message);
-  //     }
-  //   });
+  csv()
+    .fromStream(
+      request.get(
+        "https://s3.amazonaws.com/rawstore.datahub.io/652de3c89c39dafdee912fd9cfb23c21.csv"
+      )
+    )
+    .subscribe(async json => {
+      try {
+        if (!(await new Ticker().checkIfTickerExists(json.Symbol))) {
+          const tickerDetails = await polygon.getTickerDetails(json.Symbol);
+          if (tickerDetails) {
+            let data = _.pick(tickerDetails, [
+              "name",
+              "symbol",
+              "logo",
+              "country",
+              "exchange",
+              "industry",
+              "sector",
+              "marketcap"
+            ]);
+            data["market_cap"] = data["marketcap"];
+            delete data["marketcap"];
+            await new Ticker().create(data);
+          }
+        }
+        if (await new Ticker().checkIfTickerExists(json.Symbol)) {
+          if (watchlist.includes(json.Symbol)) {
+            if (!(await new OHLCData().checkIfOHLCLoaded(json.Symbol))) {
+              await loadOHLC(json.Symbol);
+            }
+            if (await new OHLCData().checkIfOHLCLoaded(json.Symbol)) {
+              scheduleDailyStockUpdate(json.Symbol);
+              getTrades(json.Symbol);
+            }
+          }
+        }
+      } catch (err) {
+        console.error(err.message);
+      }
+    });
 };
 
-exports.newTrade = symbol => {
-  const strategies = fs.readdirSync(__dirname + "/../strategies");
-  strategies.map(strategy => {
-    require(__dirname + `/../strategies/${strategy}`).onNewTrade(symbol);
+exports.newTrade = async symbol => {
+  redis.get(symbol, async (err, price) => {
+    try {
+      if (!price || !(await alpaca.isMarketOpen())) {
+        return;
+      }
+
+      const strategies = fs.readdirSync(__dirname + "/../strategies");
+      strategies.map(async strategy => {
+        await require(__dirname + `/../strategies/${strategy}`).executeStategy(
+          symbol,
+          price
+        );
+      });
+    } catch (err) {
+      console.error(err.message);
+    }
   });
 };
 
-exports.stockCalcs = async (dt, symbol) => {
+const stockCalcs = async (dt, symbol) => {
   try {
     moment.updateLocale("us", {
       holidays: Object.values(calculateHolidays(new Date(dt).getFullYear())),
@@ -202,7 +222,7 @@ exports.stockCalcs = async (dt, symbol) => {
 
     return data;
   } catch (err) {
-    console.error(err.message);
+    throw new Error(err.message);
   }
 };
 
@@ -232,6 +252,70 @@ const loadOHLC = async symbol => {
       });
     });
   } catch (err) {
-    throw new Error(err.message);
+    console.error(err.message);
+  }
+};
+
+const backtest = async (symbol, years, startValue, strategyName) => {
+  try {
+    const to = moment().format("YYYY-MM-DD");
+    const from = moment(to).subtract(years, "years").format("YYYY-MM-DD");
+    const aggregates = await new OHLCData().find({ symbol }, from, to);
+
+    const result = await aggregates.reduce(
+      async (status, agg) => {
+        const calcs = await stockCalcs(
+          moment(agg.timestamp).format("YYYY-MM-DD"),
+          symbol
+        );
+
+        status = await status;
+
+        const trade = await require(__dirname +
+          `/../strategies/${strategyName}`).executeStategy(
+          symbol,
+          agg.close,
+          true,
+          calcs,
+          status.position,
+          status.account
+        );
+        if (trade) {
+          let oldQty = status.position ? status.position.qty : 0;
+          const newQty = (oldQty += trade.quantity);
+          status.position =
+            newQty > 0
+              ? {
+                  avg_entry_price: trade.price,
+                  qty: newQty
+                }
+              : null;
+          status.account.buying_power -= trade.value;
+          status.trades.push(trade);
+        }
+
+        return status;
+      },
+      {
+        position: null,
+        account: {
+          buying_power: startValue
+        },
+        trades: []
+      }
+    );
+
+    const endValue =
+      result.position.qty * aggregates[aggregates.length - 1].close +
+      result.account.buying_power;
+
+    console.log({
+      startValue,
+      endValue,
+      returnDollars: endValue - startValue,
+      returnPercentage: percentageDifference(startValue, endValue)
+    });
+  } catch (err) {
+    console.error(err.message);
   }
 };
