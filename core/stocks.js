@@ -312,7 +312,8 @@ const backtest = async (symbol, years, startValue, strategyName) => {
     );
 
     const endValue =
-      result.position.qty * aggregates[aggregates.length - 1].close +
+      (result.position ? result.position.qty : 0) *
+        aggregates[aggregates.length - 1].close +
       result.account.buying_power;
 
     return {
