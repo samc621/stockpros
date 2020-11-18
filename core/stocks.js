@@ -15,7 +15,6 @@ const {
 const { calculateHolidays } = require("../helpers/holidays");
 
 const polygon = require("../services/polygon-io");
-const alpaca = require("../services/alpaca");
 
 const Ticker = require("../models/tickers");
 const TickerTechnical = require("../models/tickerTechnicals");
@@ -89,14 +88,33 @@ exports.loadStocks = async () => {
     "NVDA"
   ];
 
-  csv()
-    .fromStream(
-      request.get(
-        "https://s3.amazonaws.com/rawstore.datahub.io/652de3c89c39dafdee912fd9cfb23c21.csv"
+  try {
+    // await loadSP500();
+    watchlist.map(async symbol => {
+      if (await new Ticker().checkIfTickerExists(symbol)) {
+        if (!(await new OHLCData().checkIfOHLCLoaded(symbol))) {
+          await loadOHLC(symbol);
+        }
+        if (await new OHLCData().checkIfOHLCLoaded(symbol)) {
+          scheduleDailyStockUpdate(symbol);
+          getTrades(symbol);
+        }
+      }
+    });
+  } catch (err) {
+    console.error(err.message);
+  }
+};
+
+const loadSP500 = async () => {
+  try {
+    csv()
+      .fromStream(
+        request.get(
+          "https://s3.amazonaws.com/rawstore.datahub.io/652de3c89c39dafdee912fd9cfb23c21.csv"
+        )
       )
-    )
-    .subscribe(async json => {
-      try {
+      .subscribe(async json => {
         if (!(await new Ticker().checkIfTickerExists(json.Symbol))) {
           const tickerDetails = await polygon.getTickerDetails(json.Symbol);
           if (tickerDetails) {
@@ -115,21 +133,10 @@ exports.loadStocks = async () => {
             await new Ticker().create(data);
           }
         }
-        if (await new Ticker().checkIfTickerExists(json.Symbol)) {
-          if (watchlist.includes(json.Symbol)) {
-            if (!(await new OHLCData().checkIfOHLCLoaded(json.Symbol))) {
-              await loadOHLC(json.Symbol);
-            }
-            if (await new OHLCData().checkIfOHLCLoaded(json.Symbol)) {
-              scheduleDailyStockUpdate(json.Symbol);
-              getTrades(json.Symbol);
-            }
-          }
-        }
-      } catch (err) {
-        console.error(err.message);
-      }
-    });
+      });
+  } catch (err) {
+    throw new Error(err.message);
+  }
 };
 
 exports.newTrade = async symbol => {
@@ -308,12 +315,12 @@ const backtest = async (symbol, years, startValue, strategyName) => {
       result.position.qty * aggregates[aggregates.length - 1].close +
       result.account.buying_power;
 
-    console.log({
+    return {
       startValue,
       endValue,
       returnDollars: endValue - startValue,
       returnPercentage: percentageDifference(startValue, endValue)
-    });
+    };
   } catch (err) {
     console.error(err.message);
   }

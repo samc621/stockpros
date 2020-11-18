@@ -69,6 +69,6 @@ exports.executeStategy = async (
 
     return null;
   } catch (err) {
-    console.error(err.message);
+    throw new Error(err.message);
   }
 };
