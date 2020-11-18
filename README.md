@@ -43,6 +43,7 @@ The `executeStrategy` method has some optional params used for backtesting:
 
 ```
 {
+  date,
   sma_50_day,
   sma_200_day,
   high_52_week,

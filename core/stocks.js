@@ -88,22 +88,25 @@ exports.loadStocks = async () => {
     "NVDA"
   ];
 
-  try {
-    // await loadSP500();
-    watchlist.map(async symbol => {
-      if (await new Ticker().checkIfTickerExists(symbol)) {
-        if (!(await new OHLCData().checkIfOHLCLoaded(symbol))) {
-          await loadOHLC(symbol);
-        }
-        if (await new OHLCData().checkIfOHLCLoaded(symbol)) {
-          scheduleDailyStockUpdate(symbol);
-          getTrades(symbol);
-        }
-      }
-    });
-  } catch (err) {
-    console.error(err.message);
-  }
+  const bt = await backtest(watchlist[0], 3, 100000, "strategy1");
+  console.log(bt);
+
+  // try {
+  //   // await loadSP500();
+  //   watchlist.map(async symbol => {
+  //     if (await new Ticker().checkIfTickerExists(symbol)) {
+  //       if (!(await new OHLCData().checkIfOHLCLoaded(symbol))) {
+  //         await loadOHLC(symbol);
+  //       }
+  //       if (await new OHLCData().checkIfOHLCLoaded(symbol)) {
+  //         scheduleDailyStockUpdate(symbol);
+  //         getTrades(symbol);
+  //       }
+  //     }
+  //   });
+  // } catch (err) {
+  //   console.error(err.message);
+  // }
 };
 
 const loadSP500 = async () => {
@@ -219,6 +222,7 @@ const stockCalcs = async (dt, symbol) => {
     );
 
     const data = {
+      date,
       sma_50_day,
       sma_200_day,
       high_52_week,
@@ -317,6 +321,7 @@ const backtest = async (symbol, years, startValue, strategyName) => {
       result.account.buying_power;
 
     return {
+      trades: result.trades,
       startValue,
       endValue,
       returnDollars: endValue - startValue,
