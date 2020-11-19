@@ -5,6 +5,8 @@ const Position = require("../models/positions");
 const TickerTechnical = require("../models/tickerTechnicals");
 
 const targetAnnualReturn = 0.2;
+const maxExposure = 0.7;
+const maxRisk = 0.01;
 
 exports.executeStategy = async (
   symbol,
@@ -28,10 +30,10 @@ exports.executeStategy = async (
         : await alpaca.getPositionForSymbol(symbol);
 
       const signalOne =
-        percentageDifference(pst.avg_entry_price, price) >= targetAnnualReturn;
+        percentageDifference(pst.avg_entry_price, price) >=
+        targetAnnualReturn * 2;
       const signalTwo =
-        percentageDifference(price, pst.avg_entry_price) >=
-        targetAnnualReturn / 2;
+        percentageDifference(price, pst.avg_entry_price) >= maxRisk;
 
       if (signalOne || signalTwo) {
         const quantity = Number(pst.qty);
@@ -67,9 +69,7 @@ exports.executeStategy = async (
 
       if (signalOne || signalTwo) {
         const acct = account ? account : await alpaca.getAccount();
-        const quantity = Math.floor(
-          (acct.buying_power * targetAnnualReturn) / 2 / price
-        );
+        const quantity = Math.floor((acct.buying_power * maxExposure) / price);
         if (!backtest && (await alpaca.isMarketOpen())) {
           console.log("buy ==> ", symbol, quantity);
           await alpaca.createOrder(symbol, quantity, "buy");

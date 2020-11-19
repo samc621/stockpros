@@ -28,6 +28,7 @@ const dailyStockUpdate = async symbol => {
   try {
     const date = new Date();
     const data = await stockCalcs(date, symbol);
+    delete data.date;
     let query = {};
     query["tickers.symbol"] = symbol;
     const tickerTechnical = await new TickerTechnical().findOne(query);
@@ -44,8 +45,8 @@ const dailyStockUpdate = async symbol => {
     }
 
     const yesterday = moment().subtract(1, "day").format("YYYY-MM-DD");
-    const yesterdayMinus5Years = moment(yesterday)
-      .subtract(5, "years")
+    const yesterdayMinus15Years = moment(yesterday)
+      .subtract(15, "years")
       .format("YYYY-MM-DD");
     const yesterdaysOHLC = await polygon.getDailyPrices(symbol, yesterday);
     await new OHLCData().create({
@@ -60,7 +61,7 @@ const dailyStockUpdate = async symbol => {
     const oldOHLCs = await new OHLCData().find(
       { symbol },
       null,
-      yesterdayMinus5Years
+      yesterdayMinus15Years
     );
     oldOHLCs.map(async ohlc => {
       await new OHLCData(ohlc.id).hardDelete();
@@ -79,34 +80,29 @@ exports.loadStocks = async () => {
     "AAPL",
     "GOOG",
     "FB",
-    "NFLX",
     "AMZN",
     "MSFT",
     "ADBE",
     "INTC",
-    "IBM",
     "NVDA"
   ];
 
-  const bt = await backtest(watchlist[0], 3, 100000, "strategy1");
-  console.log(bt);
-
-  // try {
-  //   // await loadSP500();
-  //   watchlist.map(async symbol => {
-  //     if (await new Ticker().checkIfTickerExists(symbol)) {
-  //       if (!(await new OHLCData().checkIfOHLCLoaded(symbol))) {
-  //         await loadOHLC(symbol);
-  //       }
-  //       if (await new OHLCData().checkIfOHLCLoaded(symbol)) {
-  //         scheduleDailyStockUpdate(symbol);
-  //         getTrades(symbol);
-  //       }
-  //     }
-  //   });
-  // } catch (err) {
-  //   console.error(err.message);
-  // }
+  try {
+    // await loadSP500();
+    watchlist.map(async symbol => {
+      if (await new Ticker().checkIfTickerExists(symbol)) {
+        if (!(await new OHLCData().checkIfOHLCLoaded(symbol))) {
+          await loadOHLC(symbol);
+        }
+        if (await new OHLCData().checkIfOHLCLoaded(symbol)) {
+          scheduleDailyStockUpdate(symbol);
+          getTrades(symbol);
+        }
+      }
+    });
+  } catch (err) {
+    console.error(err.message);
+  }
 };
 
 const loadSP500 = async () => {
@@ -184,22 +180,22 @@ const stockCalcs = async (dt, symbol) => {
       .subtract(3, "years")
       .format("YYYY-MM-DD");
 
-    let aggregates50Days = await new OHLCData().find(
+    const aggregates50Days = await new OHLCData().find(
       { symbol },
       dateMinus50Days,
       date
     );
-    let aggregates200Days = await new OHLCData().find(
+    const aggregates200Days = await new OHLCData().find(
       { symbol },
       dateMinus200Days,
       date
     );
-    let aggregates52Weeks = await new OHLCData().find(
+    const aggregates52Weeks = await new OHLCData().find(
       { symbol },
       dateMinus52Weeks,
       date
     );
-    let aggregates3Years = await new OHLCData().find(
+    const aggregates3Years = await new OHLCData().find(
       { symbol },
       dateMinus3Years,
       date
@@ -239,15 +235,15 @@ const stockCalcs = async (dt, symbol) => {
 const loadOHLC = async symbol => {
   try {
     const today = moment().format("YYYY-MM-DD");
-    const todayMinus5Years = moment(today)
-      .subtract(5, "years")
+    const todayMinus15Years = moment(today)
+      .subtract(15, "years")
       .format("YYYY-MM-DD");
 
     const aggregates = await polygon.getAggregates(
       symbol,
       1,
       "day",
-      todayMinus5Years,
+      todayMinus15Years,
       today
     );
 
@@ -315,13 +311,21 @@ const backtest = async (symbol, years, startValue, strategyName) => {
       }
     );
 
+    const trades = result.trades.map((trade, i) => {
+      if (trade.value < 0) {
+        trade.profit = result.trades[i - 1].value * -1 - trade.value;
+      }
+
+      return trade;
+    });
+
     const endValue =
       (result.position ? result.position.qty : 0) *
         aggregates[aggregates.length - 1].close +
       result.account.buying_power;
 
     return {
-      trades: result.trades,
+      trades,
       startValue,
       endValue,
       returnDollars: endValue - startValue,
