@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "test": "mocha tests --timeout 10000"
+    "test": "mocha tests --timeout 10000",
+     "knex": "knex"
   },
   "author": "Samuel Corso",
   "license": "ISC",

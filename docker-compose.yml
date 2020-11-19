@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: "postgres:alpine"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=stockpros
+      - POSTGRES_USER=stockpros
+      - POSTGRES_PASSWORD=YheaEJ1FGW5NrU51
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"
+  server:
+    build: ./
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - NODE_ENV=test
+
+volumes:
+  db-data:    
