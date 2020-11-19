@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node app.js",
     "test": "mocha tests --timeout 10000",
-     "knex": "knex"
+    "knex": "knex"
   },
   "author": "Samuel Corso",
   "license": "ISC",
