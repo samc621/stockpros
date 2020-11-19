@@ -36,7 +36,8 @@ On start, StockPros will load the S&P 500 stocks into the DB and then begin runn
 
 ### Running with Docker Compose
 
-`$ docker-compose build` <br>
+`$ docker-compose build`
+
 `$ docker-compose up`
 
 ## Backtesting
