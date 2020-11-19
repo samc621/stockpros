@@ -88,7 +88,7 @@ exports.loadStocks = async () => {
   ];
 
   try {
-    // await loadSP500();
+    await loadSP500();
     watchlist.map(async symbol => {
       if (await new Ticker().checkIfTickerExists(symbol)) {
         if (!(await new OHLCData().checkIfOHLCLoaded(symbol))) {
@@ -107,32 +107,38 @@ exports.loadStocks = async () => {
 
 const loadSP500 = async () => {
   try {
-    csv()
-      .fromStream(
-        request.get(
-          "https://s3.amazonaws.com/rawstore.datahub.io/652de3c89c39dafdee912fd9cfb23c21.csv"
-        )
+    const jsons = await csv().fromStream(
+      request.get(
+        "https://s3.amazonaws.com/rawstore.datahub.io/652de3c89c39dafdee912fd9cfb23c21.csv"
       )
-      .subscribe(async json => {
-        if (!(await new Ticker().checkIfTickerExists(json.Symbol))) {
-          const tickerDetails = await polygon.getTickerDetails(json.Symbol);
-          if (tickerDetails) {
-            let data = _.pick(tickerDetails, [
-              "name",
-              "symbol",
-              "logo",
-              "country",
-              "exchange",
-              "industry",
-              "sector",
-              "marketcap"
-            ]);
-            data["market_cap"] = data["marketcap"];
-            delete data["marketcap"];
-            await new Ticker().create(data);
+    );
+
+    return await Promise.all(
+      jsons.map(async json => {
+        try {
+          if (!(await new Ticker().checkIfTickerExists(json.Symbol))) {
+            const tickerDetails = await polygon.getTickerDetails(json.Symbol);
+            if (tickerDetails) {
+              let data = _.pick(tickerDetails, [
+                "name",
+                "symbol",
+                "logo",
+                "country",
+                "exchange",
+                "industry",
+                "sector",
+                "marketcap"
+              ]);
+              data["market_cap"] = data["marketcap"];
+              delete data["marketcap"];
+              return await new Ticker().create(data);
+            }
           }
+        } catch (err) {
+          return;
         }
-      });
+      })
+    );
   } catch (err) {
     throw new Error(err.message);
   }
