@@ -16,6 +16,10 @@ module.exports = {
     database: process.env.DB_NAME,
     password: process.env.DB_PASSWORD
   },
+  redis: {
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT
+  },
   polygon: {
     apiKey: process.env.POLYGON_API_KEY
   }
