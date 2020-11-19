@@ -4,7 +4,7 @@ const { percentageDifference } = require("../helpers/math");
 const Position = require("../models/positions");
 const TickerTechnical = require("../models/tickerTechnicals");
 
-const targetAnnualReturn = 0.2;
+const targetReturn = 0.2;
 const maxExposure = 0.7;
 const maxRisk = 0.01;
 
@@ -30,8 +30,7 @@ exports.executeStategy = async (
         : await alpaca.getPositionForSymbol(symbol);
 
       const signalOne =
-        percentageDifference(pst.avg_entry_price, price) >=
-        targetAnnualReturn * 2;
+        percentageDifference(pst.avg_entry_price, price) >= targetReturn * 2;
       const signalTwo =
         percentageDifference(price, pst.avg_entry_price) >= maxRisk;
 
@@ -60,12 +59,11 @@ exports.executeStategy = async (
       }
     } else {
       const signalOne =
-        percentageDifference(price, tickerTechnical.sma_50_day) >=
-        targetAnnualReturn / 2;
+        percentageDifference(price, tickerTechnical.sma_50_day) >= targetReturn;
       const signalTwo =
         price >= tickerTechnical.sma_50_day &&
         percentageDifference(price, tickerTechnical.high_52_week) >=
-          targetAnnualReturn;
+          targetReturn;
 
       if (signalOne || signalTwo) {
         const acct = account ? account : await alpaca.getAccount();
