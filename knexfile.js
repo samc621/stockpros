@@ -20,7 +20,7 @@ module.exports = {
       directory: "db/seeds"
     }
   },
-  test: {
+  docker: {
     client: "pg",
     connection: {
       host: config.get("db.host"),
