@@ -28,11 +28,11 @@ Strategies are initialized with the following parameters:
 
 - `buySignals` (Array[boolean]) - array of logical expressions which indicate whether or not to trigger a buy request. Take a look at the following example:
 
-`percentageDifference(price, stockCalcs.sma_50_day) >= targetReturn >= 0.2`
+`percentageDifference(price, stockCalcs.sma_50_day) >= 0.2`
 
 `percentageDifference` calculates the difference between the current price and 50-day simple moving average for a symbol, and the statement checks if this value is greater than or equal to 20%. If true, this is a signal for a buy request.
 
-- `sellSignals` (Array[boolean]) - array of logical expressions which indicate whether or not to trigger a sell request.Take a look at the following example:
+- `sellSignals` (Array[boolean]) - array of logical expressions which indicate whether or not to trigger a sell request. Take a look at the following example:
 
 `percentageDifference(position.avg_entry_price, price) >= 0.2`
 
