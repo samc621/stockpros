@@ -15,10 +15,12 @@ const {
 const { calculateHolidays } = require("../helpers/holidays");
 
 const polygon = require("../services/polygon-io");
+const alpaca = require("../services/alpaca");
 
 const Ticker = require("../models/tickers");
 const TickerTechnical = require("../models/tickerTechnicals");
 const OHLCData = require("../models/ohlcData");
+const Position = require("../models/positions");
 
 const getTrades = symbol => {
   polygon.sendWebhookMessage({ action: "subscribe", params: `T.${symbol}` });
@@ -151,11 +153,24 @@ exports.newTrade = async symbol => {
         return;
       }
 
+      const tickerTechnical = await new TickerTechnical().findOne({ symbol });
+
+      let position = null;
+      if (await new Position().checkIfPositionExists(symbol)) {
+        position = await alpaca.getPositionForSymbol(symbol);
+      }
+
+      const account = await alpaca.getAccount();
+
       const strategies = fs.readdirSync(__dirname + "/../strategies");
       strategies.map(async strategy => {
         await require(__dirname + `/../strategies/${strategy}`).executeStategy(
           symbol,
-          price
+          price,
+          false,
+          tickerTechnical,
+          position,
+          account
         );
       });
     } catch (err) {

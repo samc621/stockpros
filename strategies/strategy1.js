@@ -1,9 +1,6 @@
 const alpaca = require("../services/alpaca");
 const { percentageDifference } = require("../helpers/math");
 
-const Position = require("../models/positions");
-const TickerTechnical = require("../models/tickerTechnicals");
-
 const targetReturn = 0.2;
 const maxExposure = 0.7;
 const maxRisk = 0.01;
@@ -17,39 +14,33 @@ exports.executeStategy = async (
   account
 ) => {
   try {
-    const tickerTechnical = stockCalcs
-      ? stockCalcs
-      : await new TickerTechnical().findOne({ symbol });
-    if (!tickerTechnical) {
+    if (!stockCalcs) {
       return;
     }
 
-    if (position || (await new Position().checkIfPositionExists(symbol))) {
-      const pst = position
-        ? position
-        : await alpaca.getPositionForSymbol(symbol);
-
+    if (position) {
       const signalOne =
-        percentageDifference(pst.avg_entry_price, price) >= targetReturn * 2;
+        percentageDifference(position.avg_entry_price, price) >=
+        targetReturn * 2;
       const signalTwo =
-        percentageDifference(price, pst.avg_entry_price) >= maxRisk;
+        percentageDifference(price, position.avg_entry_price) >= maxRisk;
 
       if (signalOne || signalTwo) {
-        const quantity = Number(pst.qty);
+        const quantity = Number(position.qty);
         if (!backtest && (await alpaca.isMarketOpen())) {
           console.log("sell ==> ", symbol, quantity);
           await alpaca.createOrder(symbol, quantity, "sell");
         } else {
           return {
-            date: tickerTechnical.date,
+            date: stockCalcs.date,
             signal: signalOne
               ? `price is ${percentageDifference(
-                  pst.avg_entry_price,
+                  position.avg_entry_price,
                   price
                 )} above average entry price`
               : `price is ${percentageDifference(
                   price,
-                  pst.avg_entry_price
+                  position.avg_entry_price
                 )} below average entry price`,
             quantity: quantity * -1,
             price,
@@ -59,29 +50,29 @@ exports.executeStategy = async (
       }
     } else {
       const signalOne =
-        percentageDifference(price, tickerTechnical.sma_50_day) >= targetReturn;
+        percentageDifference(price, stockCalcs.sma_50_day) >= targetReturn;
       const signalTwo =
-        price >= tickerTechnical.sma_50_day &&
-        percentageDifference(price, tickerTechnical.high_52_week) >=
-          targetReturn;
+        price >= stockCalcs.sma_50_day &&
+        percentageDifference(price, stockCalcs.high_52_week) >= targetReturn;
 
       if (signalOne || signalTwo) {
-        const acct = account ? account : await alpaca.getAccount();
-        const quantity = Math.floor((acct.buying_power * maxExposure) / price);
+        const quantity = Math.floor(
+          (account.buying_power * maxExposure) / price
+        );
         if (!backtest && (await alpaca.isMarketOpen())) {
           console.log("buy ==> ", symbol, quantity);
           await alpaca.createOrder(symbol, quantity, "buy");
         } else {
           return {
-            date: tickerTechnical.date,
+            date: stockCalcs.date,
             signal: signalOne
               ? `price is ${percentageDifference(
                   price,
-                  tickerTechnical.sma_50_day
+                  stockCalcs.sma_50_day
                 )} below 50-day SMA`
               : `price is ${percentageDifference(
                   price,
-                  tickerTechnical.high_52_week
+                  stockCalcs.high_52_week
                 )} below 52-week high`,
             quantity,
             price,

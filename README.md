@@ -42,8 +42,10 @@ On start, StockPros will load the S&P 500 stocks into the DB and then begin runn
 
 ## Backtesting
 
-The `executeStrategy` method has some optional params used for backtesting:
+The `executeStrategy` method can be used for backtesting the strategy as well. It requires the following parameters:
 
+- `symbol` (String),
+- `price` (Number),
 - `backtest` (Boolean) - set to true for backtesting
 - `stockCalcs` (Object) - the point-in-time calculations which are normally stored in the DB
 
