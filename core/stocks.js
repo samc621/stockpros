@@ -70,7 +70,7 @@ const dailyStockUpdate = async symbol => {
       await new OHLCData(ohlc.id).hardDelete();
     });
   } catch (err) {
-    console.error(err.message);
+    console.error(err);
   }
 };
 
@@ -104,7 +104,7 @@ exports.loadStocks = async () => {
       }
     });
   } catch (err) {
-    console.error(err.message);
+    console.error(err);
   }
 };
 
@@ -147,10 +147,11 @@ const loadSP500 = async () => {
   }
 };
 
-const getStrategy1Data = (price, stockCalcs, account, position) => {
-  const targetReturn = 0.2;
-  const maxExposure = 0.7;
-  const maxRisk = 0.01;
+const getStrategy1Data = async (price, stockCalcs, position, account) => {
+  const targetReturn = 0.2,
+    maxExposure = 0.7,
+    maxRisk = 0.01;
+
   const sellSignals = [];
   if (position) {
     sellSignals.push(
@@ -160,6 +161,11 @@ const getStrategy1Data = (price, stockCalcs, account, position) => {
       percentageDifference(price, position.avg_entry_price) >= maxRisk
     );
   }
+  let sellQuantity = null;
+  if (sellSignals.some(signal => signal === true)) {
+    sellQuantity = Number(position.qty);
+  }
+
   const buySignals = [];
   buySignals.push(
     percentageDifference(price, stockCalcs.sma_50_day) >= targetReturn
@@ -168,12 +174,17 @@ const getStrategy1Data = (price, stockCalcs, account, position) => {
     price >= stockCalcs.sma_50_day &&
       percentageDifference(price, stockCalcs.high_52_week) >= targetReturn
   );
-  const buyQuantity = Math.floor((account.buying_power * maxExposure) / price);
+  let buyQuantity = null;
+  if (buySignals.some(signal => signal === true)) {
+    const acct = account || (await alpaca.getAccount());
+    buyQuantity = Math.floor((acct.buying_power * maxExposure) / price);
+  }
 
   return {
     buySignals,
     sellSignals,
-    buyQuantity
+    buyQuantity,
+    sellQuantity
   };
 };
 
@@ -190,26 +201,21 @@ exports.newTrade = async symbol => {
       if (await new Position().checkIfPositionExists(symbol)) {
         position = await alpaca.getPositionForSymbol(symbol);
       }
+      const {
+        buySignals,
+        sellSignals,
+        buyQuantity,
+        sellQuantity
+      } = await getStrategy1Data(price, tickerTechnical, position);
 
-      const account = await alpaca.getAccount();
-
-      const { buySignals, sellSignals, buyQuantity } = getStrategy1Data(
-        price,
-        tickerTechnical,
-        account,
-        position
-      );
-
-      await new Strategy(buySignals, sellSignals, buyQuantity).executeStrategy(
-        symbol,
-        price,
-        false,
-        tickerTechnical,
-        position,
-        account
-      );
+      await new Strategy(
+        buySignals,
+        sellSignals,
+        buyQuantity,
+        sellQuantity
+      ).executeStrategy(symbol, price, false, tickerTechnical);
     } catch (err) {
-      console.error(err.message);
+      console.error(err);
     }
   });
 };
@@ -314,11 +320,11 @@ const loadOHLC = async symbol => {
       });
     });
   } catch (err) {
-    console.error(err.message);
+    console.error(err);
   }
 };
 
-const backtest = async (symbol, years, startValue, strategyName) => {
+const backtest = async (symbol, years, startValue) => {
   try {
     const to = moment().format("YYYY-MM-DD");
     const from = moment(to).subtract(years, "years").format("YYYY-MM-DD");
@@ -333,25 +339,24 @@ const backtest = async (symbol, years, startValue, strategyName) => {
 
         status = await status;
 
-        const { buySignals, sellSignals, buyQuantity } = getStrategy1Data(
+        const {
+          buySignals,
+          sellSignals,
+          buyQuantity,
+          sellQuantity
+        } = await getStrategy1Data(
           agg.close,
           calcs,
-          status.account,
-          status.position
+          status.position,
+          status.account
         );
 
         const trade = await new Strategy(
           buySignals,
           sellSignals,
-          buyQuantity
-        ).executeStrategy(
-          symbol,
-          agg.close,
-          true,
-          calcs,
-          status.position,
-          status.account
-        );
+          buyQuantity,
+          sellQuantity
+        ).executeStrategy(symbol, agg.close, true, calcs, status.position);
         if (trade) {
           let oldQty = status.position ? status.position.qty : 0;
           const newQty = (oldQty += trade.quantity);
@@ -398,6 +403,6 @@ const backtest = async (symbol, years, startValue, strategyName) => {
       returnPercentage: percentageDifference(startValue, endValue)
     };
   } catch (err) {
-    console.error(err.message);
+    console.error(err);
   }
 };

@@ -4,10 +4,10 @@ StockPros is an interface for implementing custom trading strategies. Users can 
 
 ## Services
 
-- [PostgreSQL](https://postgresql.org) - SQL database
-- [Redis](https://redis.io) - in-memory data store
-- [Alpaca](https://alpaca.markets) - live/paper trading
-- [Polygon](https://polygon.io) - market data
+- [PostgreSQL](https://postgresql.org) - SQL database.
+- [Redis](https://redis.io) - in-memory data store.
+- [Alpaca](https://alpaca.markets) - live/paper trading.
+- [Polygon](https://polygon.io) - market data.
   - Polygon data is free with a live Alpaca trading account. If you set a Polygon API key in the environment variables (see below), it be used, otherwise the live Alpaca API key will be used.
 
 ## Installation
@@ -39,17 +39,16 @@ Strategies are initialized with the following parameters:
 `percentageDifference` calculates the difference between the average entry price and the current price for a symbol, and the statement checks if this value is greater than or equal to 20%. If true, this is a signal for a sell request.
 
 - `buyQuantity` (Number)
-
-StockPros comes with a default strategy which contains this data.
+- `sellQuantity` (Number)
 
 ## Strategy Execution
 
-Strategy instances have an `executeStrategy` method which can be used to forward or backtest a strategy. This method accepts the following parameters:
+Strategy instances have an `executeStrategy` method which can be used to forward test or backtest a strategy. This method accepts the following parameters:
 
-- `symbol` (String),
-- `price` (Number),
-- `backtest` (Boolean) - set to true for backtesting
-- `stockCalcs` (Object) - the point-in-time calculations which are normally stored in the DB
+- `symbol` (String)
+- `price` (Number)
+- `backtest` (Boolean) - set to true for backtesting.
+- `stockCalcs` (Object) - the point-in-time calculations which are normally stored in the DB.
 
 ```
 {
@@ -62,7 +61,13 @@ Strategy instances have an `executeStrategy` method which can be used to forward
 };
 ```
 
-- `position` (Object) - the point-in-time position details
+### Using the default strategy
+
+StockPros comes with a default strategy. You can use the `getStrategy1Data` method to retrieve the data necessary to initialize it. This method accepts the following paramters:
+
+- `price` (Number)
+- `stockCalcs` (Object)
+- `position` (Object) - the point-in-time position details.
 
 ```
 {
@@ -71,7 +76,9 @@ Strategy instances have an `executeStrategy` method which can be used to forward
 };
 ```
 
-- `account` (Object) - the point-in-time account details
+There is also an additional parameter which must be passed in when backtesting.
+
+- `account` (Object) - the point-in-time account details.
 
 ```
 {
@@ -79,11 +86,19 @@ Strategy instances have an `executeStrategy` method which can be used to forward
 }
 ```
 
+### Backtesting
+
+Backtests can be run against a strategy with the `backtest` method. This method accepts the following parameters
+
+- `symbol` (String)
+- `years` (Number) - number of years for backtesting.
+- `startValue` (Number) - the account starting value.
+
 ## Start the server
 
 `$ npm start`
 
-On start, StockPros will load the S&P 500 stocks into the DB and then begin running the default strategy on the selected watchlist.
+On start, StockPros will load the S&P 500 stocks into the DB, including up to 15 years of historical OHLC (open-high-low-close) data. It will then begin running the default strategy on the selected watchlist.
 
 ### Running with Docker Compose
 
