@@ -1,5 +1,4 @@
 const redis = require("../services/redis");
-const fs = require("fs");
 const request = require("request");
 const csv = require("csvtojson");
 const moment = require("moment-business-days");
@@ -13,6 +12,8 @@ const {
   percentageDifference
 } = require("../helpers/math");
 const { calculateHolidays } = require("../helpers/holidays");
+
+const Strategy = require("./strategies");
 
 const polygon = require("../services/polygon-io");
 const alpaca = require("../services/alpaca");
@@ -146,6 +147,36 @@ const loadSP500 = async () => {
   }
 };
 
+const getStrategy1Data = (price, stockCalcs, account, position) => {
+  const targetReturn = 0.2;
+  const maxExposure = 0.7;
+  const maxRisk = 0.01;
+  const sellSignals = [];
+  if (position) {
+    sellSignals.push(
+      percentageDifference(position.avg_entry_price, price) >= targetReturn * 2
+    );
+    sellSignals.push(
+      percentageDifference(price, position.avg_entry_price) >= maxRisk
+    );
+  }
+  const buySignals = [];
+  buySignals.push(
+    percentageDifference(price, stockCalcs.sma_50_day) >= targetReturn
+  );
+  buySignals.push(
+    price >= stockCalcs.sma_50_day &&
+      percentageDifference(price, stockCalcs.high_52_week) >= targetReturn
+  );
+  const buyQuantity = Math.floor((account.buying_power * maxExposure) / price);
+
+  return {
+    buySignals,
+    sellSignals,
+    buyQuantity
+  };
+};
+
 exports.newTrade = async symbol => {
   redis.get(symbol, async (err, price) => {
     try {
@@ -162,17 +193,21 @@ exports.newTrade = async symbol => {
 
       const account = await alpaca.getAccount();
 
-      const strategies = fs.readdirSync(__dirname + "/../strategies");
-      strategies.map(async strategy => {
-        await require(__dirname + `/../strategies/${strategy}`).executeStategy(
-          symbol,
-          price,
-          false,
-          tickerTechnical,
-          position,
-          account
-        );
-      });
+      const { buySignals, sellSignals, buyQuantity } = getStrategy1Data(
+        price,
+        tickerTechnical,
+        account,
+        position
+      );
+
+      await new Strategy(buySignals, sellSignals, buyQuantity).executeStrategy(
+        symbol,
+        price,
+        false,
+        tickerTechnical,
+        position,
+        account
+      );
     } catch (err) {
       console.error(err.message);
     }
@@ -298,8 +333,18 @@ const backtest = async (symbol, years, startValue, strategyName) => {
 
         status = await status;
 
-        const trade = await require(__dirname +
-          `/../strategies/${strategyName}`).executeStategy(
+        const { buySignals, sellSignals, buyQuantity } = getStrategy1Data(
+          agg.close,
+          calcs,
+          status.account,
+          status.position
+        );
+
+        const trade = await new Strategy(
+          buySignals,
+          sellSignals,
+          buyQuantity
+        ).executeStrategy(
           symbol,
           agg.close,
           true,

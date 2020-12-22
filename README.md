@@ -24,25 +24,27 @@ Use the `.env.example` file to configure the environment variables for a given e
 
 ## Strategy Creation
 
-Strategies go into the `/strategies` directory. StockPros comes with a default strategy.
+Strategies are initialized with the following parameters:
 
-All strategies should contain an `executeStategy` method which codifies the strategy itself.
+- `buySignals` (Array[boolean]) - array of logical expressions which indicate whether or not to trigger a buy request. Take a look at the following example:
 
-On start, StockPros will load the S&P 500 stocks into the DB and then begin running **all** strategies in the directory on the selected watchlist.
+`percentageDifference(price, stockCalcs.sma_50_day) >= targetReturn >= 0.2`
 
-## Start the server
+`percentageDifference` calculates the difference between the current price and 50-day simple moving average for a symbol, and the statement checks if this value is greater than or equal to 20%. If true, this is a signal for a buy request.
 
-`$ npm start`
+- `sellSignals` (Array[boolean]) - array of logical expressions which indicate whether or not to trigger a sell request.Take a look at the following example:
 
-### Running with Docker Compose
+`percentageDifference(position.avg_entry_price, price) >= 0.2`
 
-`$ docker-compose build`
+`percentageDifference` calculates the difference between the average entry price and the current price for a symbol, and the statement checks if this value is greater than or equal to 20%. If true, this is a signal for a sell request.
 
-`$ docker-compose up`
+- `buyQuantity` (Number)
 
-## Backtesting
+StockPros comes with a default strategy which contains this data.
 
-The `executeStrategy` method can be used for backtesting the strategy as well. It requires the following parameters:
+## Strategy Execution
+
+Strategy instances have an `executeStrategy` method which can be used to forward or backtest a strategy. This method accepts the following parameters:
 
 - `symbol` (String),
 - `price` (Number),
@@ -76,3 +78,15 @@ The `executeStrategy` method can be used for backtesting the strategy as well. I
   buying_power
 }
 ```
+
+## Start the server
+
+`$ npm start`
+
+On start, StockPros will load the S&P 500 stocks into the DB and then begin running the default strategy on the selected watchlist.
+
+### Running with Docker Compose
+
+`$ docker-compose build`
+
+`$ docker-compose up`
