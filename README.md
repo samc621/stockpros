@@ -102,7 +102,7 @@ Backtests can be run against a strategy with the `backtest` method. This method 
 
 `$ npm start`
 
-On start, StockPros will load the S&P 500 stocks into the DB, including up to 15 years of historical OHLC (open-high-low-close) data. It will then begin running the default strategy on the selected watchlist.
+On start, StockPros will load the watchlist stocks into the DB, including up to 15 years of historical OHLC (open-high-low-close) data, and then begin running the default strategy for these stocks.
 
 ### Running with Docker Compose
 

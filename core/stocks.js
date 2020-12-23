@@ -1,6 +1,4 @@
 const redis = require("../services/redis");
-const request = require("request");
-const csv = require("csvtojson");
 const moment = require("moment-business-days");
 const _ = require("lodash");
 const schedule = require("node-schedule");
@@ -91,8 +89,10 @@ exports.loadStocks = async () => {
   ];
 
   try {
-    await loadSP500();
     watchlist.map(async symbol => {
+      if (!(await new Ticker().checkIfTickerExists(symbol))) {
+        await loadTicker(symbol);
+      }
       if (await new Ticker().checkIfTickerExists(symbol)) {
         if (!(await new OHLCData().checkIfOHLCLoaded(symbol))) {
           await loadOHLC(symbol);
@@ -108,40 +108,24 @@ exports.loadStocks = async () => {
   }
 };
 
-const loadSP500 = async () => {
+const loadTicker = async symbol => {
   try {
-    const jsons = await csv().fromStream(
-      request.get(
-        "https://s3.amazonaws.com/rawstore.datahub.io/652de3c89c39dafdee912fd9cfb23c21.csv"
-      )
-    );
-
-    return await Promise.all(
-      jsons.map(async json => {
-        try {
-          if (!(await new Ticker().checkIfTickerExists(json.Symbol))) {
-            const tickerDetails = await polygon.getTickerDetails(json.Symbol);
-            if (tickerDetails) {
-              let data = _.pick(tickerDetails, [
-                "name",
-                "symbol",
-                "logo",
-                "country",
-                "exchange",
-                "industry",
-                "sector",
-                "marketcap"
-              ]);
-              data["market_cap"] = data["marketcap"];
-              delete data["marketcap"];
-              return await new Ticker().create(data);
-            }
-          }
-        } catch (err) {
-          return;
-        }
-      })
-    );
+    const tickerDetails = await polygon.getTickerDetails(symbol);
+    if (tickerDetails) {
+      let data = _.pick(tickerDetails, [
+        "name",
+        "symbol",
+        "logo",
+        "country",
+        "exchange",
+        "industry",
+        "sector",
+        "marketcap"
+      ]);
+      data["market_cap"] = data["marketcap"];
+      delete data["marketcap"];
+      return await new Ticker().create(data);
+    }
   } catch (err) {
     throw new Error(err.message);
   }
