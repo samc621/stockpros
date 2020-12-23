@@ -48,6 +48,16 @@ Strategy instances have an `executeStrategy` method which can be used to forward
 - `symbol` (String)
 - `price` (Number)
 - `backtest` (Boolean) - set to true for backtesting.
+
+There is also an additional parameter which must be passed in when backtesting.
+
+- `date` (Date)
+
+### Using the default strategy
+
+StockPros comes with a default strategy. You can use the `getStrategy1Data` method to retrieve the data necessary to initialize it. This method accepts the following paramters:
+
+- `price` (Number)
 - `stockCalcs` (Object) - the point-in-time calculations which are normally stored in the DB.
 
 ```
@@ -61,12 +71,6 @@ Strategy instances have an `executeStrategy` method which can be used to forward
 };
 ```
 
-### Using the default strategy
-
-StockPros comes with a default strategy. You can use the `getStrategy1Data` method to retrieve the data necessary to initialize it. This method accepts the following paramters:
-
-- `price` (Number)
-- `stockCalcs` (Object)
 - `position` (Object) - the point-in-time position details.
 
 ```

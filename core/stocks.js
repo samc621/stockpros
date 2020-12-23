@@ -213,7 +213,7 @@ exports.newTrade = async symbol => {
         sellSignals,
         buyQuantity,
         sellQuantity
-      ).executeStrategy(symbol, price, false, tickerTechnical);
+      ).executeStrategy(symbol, price, false);
     } catch (err) {
       console.error(err);
     }
@@ -356,7 +356,7 @@ const backtest = async (symbol, years, startValue) => {
           sellSignals,
           buyQuantity,
           sellQuantity
-        ).executeStrategy(symbol, agg.close, true, calcs, status.position);
+        ).executeStrategy(symbol, agg.close, true, calcs.date);
         if (trade) {
           let oldQty = status.position ? status.position.qty : 0;
           const newQty = (oldQty += trade.quantity);
