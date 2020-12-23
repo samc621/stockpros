@@ -167,13 +167,15 @@ const getStrategy1Data = async (price, stockCalcs, position, account) => {
   }
 
   const buySignals = [];
-  buySignals.push(
-    percentageDifference(price, stockCalcs.sma_50_day) >= targetReturn
-  );
-  buySignals.push(
-    price >= stockCalcs.sma_50_day &&
-      percentageDifference(price, stockCalcs.high_52_week) >= targetReturn
-  );
+  if (!position) {
+    buySignals.push(
+      percentageDifference(price, stockCalcs.sma_50_day) >= targetReturn
+    );
+    buySignals.push(
+      price >= stockCalcs.sma_50_day &&
+        percentageDifference(price, stockCalcs.high_52_week) >= targetReturn
+    );
+  }
   let buyQuantity = null;
   if (buySignals.some(signal => signal === true)) {
     const acct = account || (await alpaca.getAccount());
