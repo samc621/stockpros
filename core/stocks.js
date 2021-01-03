@@ -370,11 +370,16 @@ const backtest = async (symbol, years, startValue) => {
 
     const trades = result.trades.map((trade, i) => {
       if (trade.value < 0) {
-        trade.profit = result.trades[i - 1].value * -1 - trade.value;
+        trade.profit =
+          (trade.price - result.trades[i - 1].price) * trade.quantity * -1;
       }
 
       return trade;
     });
+    const profitableTrades = trades.filter(trade => trade.profit).length;
+    const winningTrades = trades.filter(trade => trade.profit > 0).length;
+    const losingTrades = profitableTrades - winningTrades;
+    const winRate = winningTrades / profitableTrades;
 
     const endValue =
       (result.position ? result.position.qty : 0) *
@@ -386,7 +391,10 @@ const backtest = async (symbol, years, startValue) => {
       startValue,
       endValue,
       returnDollars: endValue - startValue,
-      returnPercentage: percentageDifference(startValue, endValue)
+      returnPercentage: percentageDifference(startValue, endValue),
+      winningTrades,
+      losingTrades,
+      winRate
     };
   } catch (err) {
     console.error(err);
