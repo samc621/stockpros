@@ -23,8 +23,7 @@ class TickerTechnicalsModel {
         "ticker_technicals.sma_200_day",
         "ticker_technicals.high_52_week",
         "ticker_technicals.low_52_week",
-        "ticker_technicals.cagr_3_year",
-        "ticker_technicals.sma_50_day"
+        "ticker_technicals.cagr_3_year"
       )
       .leftJoin("tickers", "ticker_technicals.ticker_id", "=", "tickers.id")
       .where(data)
@@ -41,8 +40,7 @@ class TickerTechnicalsModel {
         "ticker_technicals.sma_200_day",
         "ticker_technicals.high_52_week",
         "ticker_technicals.low_52_week",
-        "ticker_technicals.cagr_3_year",
-        "ticker_technicals.sma_50_day"
+        "ticker_technicals.cagr_3_year"
       )
       .leftJoin("tickers", "ticker_technicals.ticker_id", "=", "tickers.id")
       .where(data)
