@@ -32,7 +32,29 @@ ws.onmessage = async message => {
   }
 };
 
-exports.sendWebhookMessage = data => {
+const waitForOpenConnection = () => {
+  return new Promise((resolve, reject) => {
+    const maxNumberOfAttempts = 10;
+    const intervalTime = 200;
+
+    let currentAttempt = 0;
+    const interval = setInterval(() => {
+      if (currentAttempt > maxNumberOfAttempts - 1) {
+        clearInterval(interval);
+        reject(new Error("Websocket not connecting"));
+      } else if (ws.readyState === ws.OPEN) {
+        clearInterval(interval);
+        resolve();
+      }
+      currentAttempt++;
+    }, intervalTime);
+  });
+};
+
+exports.sendWebhookMessage = async data => {
+  if (ws.readyState !== ws.OPEN) {
+    await waitForOpenConnection();
+  }
   ws.send(JSON.stringify(data));
 };
 
@@ -69,6 +91,7 @@ exports.getDailyPrices = async (symbol, date) => {
     );
     return response.data;
   } catch (err) {
+    console.log("===>", symbol, date);
     throw new Error(err.message);
   }
 };
