@@ -21,6 +21,7 @@ const TickerTechnical = require("../models/tickerTechnicals");
 const OHLCData = require("../models/ohlcData");
 const Position = require("../models/positions");
 const Strategy = require("../models/strategies");
+const WatchedSymbols = require("../models/watchedSymbols");
 
 const getTrades = symbol => {
   polygon.sendWebhookMessage({ action: "subscribe", params: `T.${symbol}` });
@@ -78,16 +79,8 @@ const scheduleDailyStockUpdate = symbol => {
 };
 
 exports.loadStocks = async () => {
-  const watchlist = [
-    "AAPL",
-    "GOOG",
-    "FB",
-    "AMZN",
-    "MSFT",
-    "ADBE",
-    "INTC",
-    "NVDA"
-  ];
+  let watchlist = await new WatchedSymbols().find({ is_active: true });
+  watchlist = watchlist.map(ws => ws.symbol);
 
   try {
     watchlist.map(async symbol => {
