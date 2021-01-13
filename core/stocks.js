@@ -11,7 +11,7 @@ const {
 } = require("../helpers/math");
 const { calculateHolidays } = require("../helpers/holidays");
 
-const Strategy = require("./strategies");
+const StrategyInstance = require("./strategies");
 
 const polygon = require("../services/polygon-io");
 const alpaca = require("../services/alpaca");
@@ -20,6 +20,7 @@ const Ticker = require("../models/tickers");
 const TickerTechnical = require("../models/tickerTechnicals");
 const OHLCData = require("../models/ohlcData");
 const Position = require("../models/positions");
+const Strategy = require("../models/strategies");
 
 const getTrades = symbol => {
   polygon.sendWebhookMessage({ action: "subscribe", params: `T.${symbol}` });
@@ -45,7 +46,7 @@ const dailyStockUpdate = async symbol => {
       }
     }
 
-    const yesterday = moment().subtract(1, "day").format("YYYY-MM-DD");
+    const yesterday = moment().businessSubtract(1, "day").format("YYYY-MM-DD");
     const yesterdayMinus15Years = moment(yesterday)
       .subtract(15, "years")
       .format("YYYY-MM-DD");
@@ -131,49 +132,6 @@ const loadTicker = async symbol => {
   }
 };
 
-const getStrategy1Data = async (price, stockCalcs, position, account) => {
-  const targetReturn = 0.2,
-    maxExposure = 0.7,
-    maxRisk = 0.01;
-
-  const sellSignals = [];
-  if (position) {
-    sellSignals.push(
-      percentageDifference(position.avg_entry_price, price) >= targetReturn * 2
-    );
-    sellSignals.push(
-      percentageDifference(price, position.avg_entry_price) >= maxRisk
-    );
-  }
-  let sellQuantity = null;
-  if (sellSignals.some(signal => signal === true)) {
-    sellQuantity = Number(position.qty);
-  }
-
-  const buySignals = [];
-  if (!position) {
-    buySignals.push(
-      percentageDifference(price, stockCalcs.sma_50_day) >= targetReturn
-    );
-    buySignals.push(
-      price >= stockCalcs.sma_50_day &&
-        percentageDifference(price, stockCalcs.high_52_week) >= targetReturn
-    );
-  }
-  let buyQuantity = null;
-  if (buySignals.some(signal => signal === true)) {
-    const acct = account || (await alpaca.getAccount());
-    buyQuantity = Math.floor((acct.buying_power * maxExposure) / price);
-  }
-
-  return {
-    buySignals,
-    sellSignals,
-    buyQuantity,
-    sellQuantity
-  };
-};
-
 exports.newTrade = async symbol => {
   redis.get(symbol, async (err, price) => {
     try {
@@ -187,19 +145,89 @@ exports.newTrade = async symbol => {
       if (await new Position().checkIfPositionExists(symbol)) {
         position = await alpaca.getPositionForSymbol(symbol);
       }
-      const {
-        buySignals,
-        sellSignals,
-        buyQuantity,
-        sellQuantity
-      } = await getStrategy1Data(price, tickerTechnical, position);
 
-      await new Strategy(
-        buySignals,
-        sellSignals,
-        buyQuantity,
-        sellQuantity
-      ).executeStrategy(symbol, price, false);
+      const avg_entry_price = position.avg_entry_price;
+      const {
+        sma_50_day,
+        sma_200_day,
+        high_52_week,
+        low_52_week,
+        cagr_3_year
+      } = tickerTechnical;
+
+      let data = {};
+      data["strategies.is_active"] = true;
+      data["strategy_signals.is_active"] = true;
+      const strategies = await new Strategy().find(data);
+      strategies.map(async strategy => {
+        let buySignals = strategy.signals.filter(
+          signal => signal.type === "buy"
+        );
+        buySignals = !position
+          ? buySignals.reduce((string, signal) => {
+              return (string +=
+                eval(
+                  percentageDifference(
+                    eval(signal.operand_1),
+                    eval(signal.operand_2)
+                  ) +
+                    signal.operator +
+                    signal.percentage_difference
+                ) +
+                (signal.next_signal_inclusive === null
+                  ? ""
+                  : signal.next_signal_inclusive
+                  ? "&&"
+                  : "||"));
+            }, "")
+          : null;
+
+        let account;
+        if (eval(buySignals)) {
+          account = await alpaca.getAccount();
+        }
+
+        let sellSignals = strategy.signals.filter(
+          signal => signal.type === "sell"
+        );
+        sellSignals = position
+          ? sellSignals.reduce((string, signal) => {
+              return (string +=
+                eval(
+                  percentageDifference(
+                    eval(signal.operand_1),
+                    eval(signal.operand_2)
+                  ) +
+                    signal.operator +
+                    signal.percentage_difference
+                ) +
+                (signal.next_signal_inclusive === null
+                  ? ""
+                  : signal.next_signal_inclusive
+                  ? "&&"
+                  : "||"));
+            }, "")
+          : null;
+
+        const buyQuantity = account
+          ? (account[strategy.buy_percentage_type_of] *
+              strategy.buy_percentage) /
+            price
+          : null;
+
+        const sellQuantity = position
+          ? (position[strategy.sell_percentage_type_of] *
+              strategy.sell_percentage) /
+            (strategy.sell_percentage_type_of === "cost_basis" ? price : 1)
+          : null;
+
+        await new StrategyInstance(
+          eval(buySignals),
+          eval(sellSignals),
+          buyQuantity,
+          sellQuantity
+        ).executeStrategy(symbol, price, false);
+      });
     } catch (err) {
       console.error(err);
     }
@@ -250,15 +278,15 @@ const stockCalcs = async (dt, symbol) => {
     );
 
     const sma_50_day = average(
-      aggregates50Days.map(a => a.close),
+      aggregates50Days.map(agg => agg.close),
       aggregates50Days.length
     );
     const sma_200_day = average(
-      aggregates200Days.map(a => a.close),
+      aggregates200Days.map(agg => agg.close),
       aggregates200Days.length
     );
-    const high_52_week = high(aggregates52Weeks.map(a => a.high));
-    const low_52_week = low(aggregates52Weeks.map(a => a.low));
+    const high_52_week = high(aggregates52Weeks.map(agg => agg.high));
+    const low_52_week = low(aggregates52Weeks.map(agg => agg.low));
     const cagr_3_year = cagr(
       aggregates3Years[0].open,
       aggregates3Years[aggregates3Years.length - 1].close,
@@ -310,11 +338,19 @@ const loadOHLC = async symbol => {
   }
 };
 
-const backtest = async (symbol, years, startValue) => {
+exports.backtest = async (strategyId, symbol, years, startValue) => {
   try {
     const to = moment().format("YYYY-MM-DD");
     const from = moment(to).subtract(years, "years").format("YYYY-MM-DD");
     const aggregates = await new OHLCData().find({ symbol }, from, to);
+
+    let data = {};
+    data["strategies.id"] = strategyId;
+    data["strategy_signals.is_active"] = true;
+    const strategy = await new Strategy().findOne(data);
+
+    let buySignals = strategy.signals.filter(signal => signal.type === "buy");
+    let sellSignals = strategy.signals.filter(signal => signal.type === "sell");
 
     const result = await aggregates.reduce(
       async (status, agg) => {
@@ -325,21 +361,70 @@ const backtest = async (symbol, years, startValue) => {
 
         status = await status;
 
+        const price = agg.close;
+        const avg_entry_price = status.position
+          ? status.position.avg_entry_price
+          : null;
         const {
-          buySignals,
-          sellSignals,
-          buyQuantity,
-          sellQuantity
-        } = await getStrategy1Data(
-          agg.close,
-          calcs,
-          status.position,
-          status.account
-        );
+          sma_50_day,
+          sma_200_day,
+          high_52_week,
+          low_52_week,
+          cagr_3_year
+        } = calcs;
 
-        const trade = await new Strategy(
-          buySignals,
-          sellSignals,
+        const evaluatedBuySignals = !status.position
+          ? buySignals.reduce((string, signal) => {
+              return (string +=
+                eval(
+                  percentageDifference(
+                    eval(signal.operand_1),
+                    eval(signal.operand_2)
+                  ) +
+                    signal.operator +
+                    signal.percentage_difference
+                ) +
+                (signal.next_signal_inclusive === null
+                  ? ""
+                  : signal.next_signal_inclusive
+                  ? "&&"
+                  : "||"));
+            }, "")
+          : null;
+
+        const evaluatedSellSignals = status.position
+          ? sellSignals.reduce((string, signal) => {
+              return (string +=
+                eval(
+                  percentageDifference(
+                    eval(signal.operand_1),
+                    eval(signal.operand_2)
+                  ) +
+                    signal.operator +
+                    signal.percentage_difference
+                ) +
+                (signal.next_signal_inclusive === null
+                  ? ""
+                  : signal.next_signal_inclusive
+                  ? "&&"
+                  : "||"));
+            }, "")
+          : false;
+
+        const buyQuantity =
+          (status.account[strategy.buy_percentage_type_of] *
+            strategy.buy_percentage) /
+          price;
+
+        const sellQuantity = status.position
+          ? (status.position[strategy.sell_percentage_type_of] *
+              strategy.sell_percentage) /
+            (strategy.sell_percentage_type_of === "cost_basis" ? price : 1)
+          : null;
+
+        const trade = await new StrategyInstance(
+          eval(evaluatedBuySignals),
+          eval(evaluatedSellSignals),
           buyQuantity,
           sellQuantity
         ).executeStrategy(symbol, agg.close, true, calcs.date);
@@ -350,10 +435,12 @@ const backtest = async (symbol, years, startValue) => {
             newQty > 0
               ? {
                   avg_entry_price: trade.price,
-                  qty: newQty
+                  qty: newQty,
+                  cost_basis: trade.value
                 }
               : null;
           status.account.buying_power -= trade.value;
+          status.account.equity -= trade.value;
           status.trades.push(trade);
         }
 
@@ -362,7 +449,8 @@ const backtest = async (symbol, years, startValue) => {
       {
         position: null,
         account: {
-          buying_power: startValue
+          buying_power: startValue,
+          equity: startValue
         },
         trades: []
       }

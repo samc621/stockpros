@@ -91,7 +91,6 @@ exports.getDailyPrices = async (symbol, date) => {
     );
     return response.data;
   } catch (err) {
-    console.log("===>", symbol, date);
     throw new Error(err.message);
   }
 };

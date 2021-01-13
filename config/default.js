@@ -22,5 +22,8 @@ module.exports = {
   },
   polygon: {
     apiKey: process.env.POLYGON_API_KEY
+  },
+  server: {
+    port: process.env.PORT
   }
 };
