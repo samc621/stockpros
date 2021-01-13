@@ -36,5 +36,7 @@ On start, StockPros will load the watchlist stocks into the DB, including up to 
 
 ## API
 
+For each API, view the docs and try the requests in Postman.
+
 - [Strategies](https://documenter.getpostman.com/view/5027621/TVzSjwkc)
 - [Signals](https://documenter.getpostman.com/view/5027621/TVzSjwkb)
