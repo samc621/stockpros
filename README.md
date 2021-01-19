@@ -18,6 +18,18 @@ Use the `.env.example` file to configure the environment variables for a given e
 
 `$ export NODE_ENV=local`
 
+### Install the dependencies
+
+`$ npm install`
+
+### Run the DB migrations
+
+`$ knex migrate:latest`
+
+### Run the DB seeders
+
+`$ knex seed:run`
+
 ## Unit Testing
 
 `$ npm test`
