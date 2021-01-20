@@ -8,12 +8,12 @@ RUN npm install
 
 COPY . .
 
-ARG ENVIRONMENT
+ARG NODE_ENV
 
-ENV NODE_ENV=$ENVIRONMENT
+ENV NODE_ENV=$NODE_ENV
 
 RUN chmod +x ./container_start.sh
 
 EXPOSE 8000
 
-CMD bash -C './container_start.sh';'bash'
+CMD /bin/sh './container_start.sh'

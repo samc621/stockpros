@@ -24,7 +24,7 @@ services:
       - postgres
       - redis
     environment:
-      - ENVIRONMENT=docker
+      - NODE_ENV=docker
 
 volumes:
   db-data:    

@@ -1,5 +1,6 @@
 #!/bin/bash
 
+echo "environment name: $NODE_ENV"
 echo "wait for DB to start"
 sleep 5
 echo "running DB migration scripts"
