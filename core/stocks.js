@@ -139,7 +139,7 @@ exports.newTrade = async symbol => {
         position = await alpaca.getPositionForSymbol(symbol);
       }
 
-      const avg_entry_price = position.avg_entry_price;
+      const avg_entry_price = position ? position.avg_entry_price : null;
       const {
         sma_50_day,
         sma_200_day,
@@ -158,21 +158,21 @@ exports.newTrade = async symbol => {
         );
         buySignals = !position
           ? buySignals.reduce((string, signal) => {
-              return (string +=
-                eval(
-                  percentageDifference(
-                    eval(signal.operand_1),
-                    eval(signal.operand_2)
-                  ) +
-                    signal.operator +
-                    signal.percentage_difference
+            return (string +=
+              eval(
+                percentageDifference(
+                  eval(signal.operand_1),
+                  eval(signal.operand_2)
                 ) +
-                (signal.next_signal_inclusive === null
-                  ? ""
-                  : signal.next_signal_inclusive
+                signal.operator +
+                signal.percentage_difference
+              ) +
+              (signal.next_signal_inclusive === null
+                ? ""
+                : signal.next_signal_inclusive
                   ? "&&"
                   : "||"));
-            }, "")
+          }, "")
           : null;
 
         let account;
@@ -185,33 +185,33 @@ exports.newTrade = async symbol => {
         );
         sellSignals = position
           ? sellSignals.reduce((string, signal) => {
-              return (string +=
-                eval(
-                  percentageDifference(
-                    eval(signal.operand_1),
-                    eval(signal.operand_2)
-                  ) +
-                    signal.operator +
-                    signal.percentage_difference
+            return (string +=
+              eval(
+                percentageDifference(
+                  eval(signal.operand_1),
+                  eval(signal.operand_2)
                 ) +
-                (signal.next_signal_inclusive === null
-                  ? ""
-                  : signal.next_signal_inclusive
+                signal.operator +
+                signal.percentage_difference
+              ) +
+              (signal.next_signal_inclusive === null
+                ? ""
+                : signal.next_signal_inclusive
                   ? "&&"
                   : "||"));
-            }, "")
+          }, "")
           : null;
 
         const buyQuantity = account
           ? (account[strategy.buy_percentage_type_of] *
-              strategy.buy_percentage) /
-            price
+            strategy.buy_percentage) /
+          price
           : null;
 
         const sellQuantity = position
           ? (position[strategy.sell_percentage_type_of] *
-              strategy.sell_percentage) /
-            (strategy.sell_percentage_type_of === "cost_basis" ? price : 1)
+            strategy.sell_percentage) /
+          (strategy.sell_percentage_type_of === "cost_basis" ? price : 1)
           : null;
 
         await new StrategyInstance(
@@ -368,40 +368,40 @@ exports.backtest = async (strategyId, symbol, years, startValue) => {
 
         const evaluatedBuySignals = !status.position
           ? buySignals.reduce((string, signal) => {
-              return (string +=
-                eval(
-                  percentageDifference(
-                    eval(signal.operand_1),
-                    eval(signal.operand_2)
-                  ) +
-                    signal.operator +
-                    signal.percentage_difference
+            return (string +=
+              eval(
+                percentageDifference(
+                  eval(signal.operand_1),
+                  eval(signal.operand_2)
                 ) +
-                (signal.next_signal_inclusive === null
-                  ? ""
-                  : signal.next_signal_inclusive
+                signal.operator +
+                signal.percentage_difference
+              ) +
+              (signal.next_signal_inclusive === null
+                ? ""
+                : signal.next_signal_inclusive
                   ? "&&"
                   : "||"));
-            }, "")
+          }, "")
           : null;
 
         const evaluatedSellSignals = status.position
           ? sellSignals.reduce((string, signal) => {
-              return (string +=
-                eval(
-                  percentageDifference(
-                    eval(signal.operand_1),
-                    eval(signal.operand_2)
-                  ) +
-                    signal.operator +
-                    signal.percentage_difference
+            return (string +=
+              eval(
+                percentageDifference(
+                  eval(signal.operand_1),
+                  eval(signal.operand_2)
                 ) +
-                (signal.next_signal_inclusive === null
-                  ? ""
-                  : signal.next_signal_inclusive
+                signal.operator +
+                signal.percentage_difference
+              ) +
+              (signal.next_signal_inclusive === null
+                ? ""
+                : signal.next_signal_inclusive
                   ? "&&"
                   : "||"));
-            }, "")
+          }, "")
           : false;
 
         const buyQuantity =
@@ -411,8 +411,8 @@ exports.backtest = async (strategyId, symbol, years, startValue) => {
 
         const sellQuantity = status.position
           ? (status.position[strategy.sell_percentage_type_of] *
-              strategy.sell_percentage) /
-            (strategy.sell_percentage_type_of === "cost_basis" ? price : 1)
+            strategy.sell_percentage) /
+          (strategy.sell_percentage_type_of === "cost_basis" ? price : 1)
           : null;
 
         const trade = await new StrategyInstance(
@@ -427,10 +427,10 @@ exports.backtest = async (strategyId, symbol, years, startValue) => {
           status.position =
             newQty > 0
               ? {
-                  avg_entry_price: trade.price,
-                  qty: newQty,
-                  cost_basis: trade.value
-                }
+                avg_entry_price: trade.price,
+                qty: newQty,
+                cost_basis: trade.value
+              }
               : null;
           status.account.buying_power -= trade.value;
           status.account.equity -= trade.value;
@@ -464,7 +464,7 @@ exports.backtest = async (strategyId, symbol, years, startValue) => {
 
     const endValue =
       (result.position ? result.position.qty : 0) *
-        aggregates[aggregates.length - 1].close +
+      aggregates[aggregates.length - 1].close +
       result.account.buying_power;
 
     return {
