@@ -238,6 +238,9 @@ exports.newTrade = async (symbol) => {
       }
 
       const tickerTechnical = await new TickerTechnical().findOne({ symbol });
+      if (!tickerTechnical) {
+        return;
+      }
 
       let position = null;
       if (await new Position().checkIfPositionExists(symbol)) {
