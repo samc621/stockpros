@@ -11,7 +11,7 @@ class StrategyInstance {
   async executeStrategy(symbol, price, backtest, date) {
     try {
       if (this.sellSignals) {
-        const quantity = this.sellQuantity;
+        const quantity = Math.floor(this.sellQuantity);
         if (!backtest && (await alpaca.isMarketOpen())) {
           console.log('sell ==> ', symbol, quantity);
           return await alpaca.createOrder(symbol, quantity, 'sell');
@@ -26,7 +26,7 @@ class StrategyInstance {
           };
         }
       } else if (this.buySignals) {
-        const quantity = this.buyQuantity;
+        const quantity = Math.floor(this.buyQuantity);
         if (!backtest && (await alpaca.isMarketOpen())) {
           console.log('buy ==> ', symbol, quantity);
           return await alpaca.createOrder(symbol, quantity, 'buy');
