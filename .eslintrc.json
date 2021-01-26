@@ -21,7 +21,6 @@
         "no-eval": "warn",
         "no-return-assign": ["error", "except-parens"],
         "no-param-reassign": "off",
-        "no-nested-ternary": "off",
-        "func-names": "off"
+        "no-nested-ternary": "off"
     }
 }
