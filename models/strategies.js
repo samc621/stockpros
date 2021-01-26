@@ -24,7 +24,7 @@ class StrategiesModel {
           "buy_percentage_type_of",
           "sell_percentage",
           "sell_percentage_type_of",
-          (json_agg(to_json(signals.*))) as "signals",
+          (json_agg(signals.* order by signals."id" asc)) as "signals",
           strategies."is_active"
         `)
       )
@@ -51,7 +51,7 @@ class StrategiesModel {
           "buy_percentage_type_of",
           "sell_percentage",
           "sell_percentage_type_of",
-          (json_agg(to_json(signals.*))) as "signals",
+          (json_agg(signals.* order by signals."id" asc)) as "signals",
           strategies."is_active"
         `)
       )
