@@ -75,7 +75,7 @@ const dailyStockUpdate = async symbol => {
 };
 
 const scheduleDailyStockUpdate = symbol => {
-  schedule.scheduleJob("0 16 * * 1-5", dailyStockUpdate(symbol));
+  schedule.scheduleJob("0 16 * * 1-5", async function () { await dailyStockUpdate(symbol) });
 };
 
 exports.loadStocks = async () => {
