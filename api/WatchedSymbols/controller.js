@@ -1,6 +1,6 @@
-const WatchedSymbol = require("../../models/watchedSymbols");
+const WatchedSymbol = require('../../models/watchedSymbols');
 
-const response = require("../../helpers/server-response");
+const response = require('../../helpers/server-response');
 
 exports.createWatchedSymbol = async (req, res) => {
   try {
@@ -8,7 +8,7 @@ exports.createWatchedSymbol = async (req, res) => {
 
     return response.Ok(
       res,
-      "Watched Symbol successfully created",
+      'Watched Symbol successfully created',
       watchedSymbol
     );
   } catch (err) {
@@ -19,10 +19,10 @@ exports.createWatchedSymbol = async (req, res) => {
 
 exports.getWatchedSymbol = async (req, res) => {
   try {
-    const id = req.params.id;
+    const { id } = req.params;
     const watchedSymbol = await new WatchedSymbol().findOne({ id });
 
-    return response.Ok(res, "Watched Symbol successfully found", watchedSymbol);
+    return response.Ok(res, 'Watched Symbol successfully found', watchedSymbol);
   } catch (err) {
     console.error(err.message);
     return response.InternalServerError(res, err.message);
@@ -35,7 +35,7 @@ exports.getWatchedSymbols = async (req, res) => {
 
     return response.Ok(
       res,
-      "Watched Symbols successfully found",
+      'Watched Symbols successfully found',
       watchedSymbols
     );
   } catch (err) {
@@ -46,12 +46,12 @@ exports.getWatchedSymbols = async (req, res) => {
 
 exports.updateWatchedSymbol = async (req, res) => {
   try {
-    const id = req.params.id;
+    const { id } = req.params;
     const watchedSymbol = await new WatchedSymbol(id).update(req.body);
 
     return response.Ok(
       res,
-      "Watched Symbol successfully updated",
+      'Watched Symbol successfully updated',
       watchedSymbol
     );
   } catch (err) {
@@ -62,14 +62,14 @@ exports.updateWatchedSymbol = async (req, res) => {
 
 exports.deleteWatchedSymbol = async (req, res) => {
   try {
-    const id = req.params.id;
+    const { id } = req.params;
     const watchedSymbol = await new WatchedSymbol(id).update({
       is_deleted: true
     });
 
     return response.Ok(
       res,
-      "Watched Symbol successfully deleted",
+      'Watched Symbol successfully deleted',
       watchedSymbol
     );
   } catch (err) {

@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node app.js",
     "test": "mocha tests --timeout 10000",
+    "lint": "eslint .",
     "knex": "knex"
   },
   "author": "Samuel Corso",
@@ -16,6 +17,9 @@
     "chai": "^4.2.0",
     "config": "^3.3.2",
     "dotenv-flow": "^3.2.0",
+    "eslint": "^7.18.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.22.1",
     "express": "^4.17.1",
     "express-validation": "^3.0.6",
     "joi": "^17.3.0",

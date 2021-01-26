@@ -1,6 +1,7 @@
-const express = require("express");
+const express = require('express');
+const { validate } = require('express-validation');
+
 const router = express.Router();
-const { validate } = require("express-validation");
 
 const {
   createWatchedSymbol,
@@ -8,16 +9,22 @@ const {
   getWatchedSymbols,
   updateWatchedSymbol,
   deleteWatchedSymbol
-} = require("./controller");
-const { create, findOne, findAll, update, deleted } = require("./validation");
+} = require('./controller');
+const {
+  create,
+  findOne,
+  findAll,
+  update,
+  deleted
+} = require('./validation');
 
 router
-  .route("/")
+  .route('/')
   .post(validate(create), createWatchedSymbol)
   .get(validate(findAll), getWatchedSymbols);
 
 router
-  .route("/:id")
+  .route('/:id')
   .get(validate(findOne), getWatchedSymbol)
   .patch(validate(update), updateWatchedSymbol)
   .delete(validate(deleted), deleteWatchedSymbol);

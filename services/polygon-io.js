@@ -1,64 +1,64 @@
-const WebSocket = require("ws");
-const config = require("config");
-const axios = require("axios");
+const WebSocket = require('ws');
+const config = require('config');
+const axios = require('axios');
 
-const stocks = require("../core/stocks");
-const redis = require("./redis");
+const stocks = require('../core/stocks');
+const redis = require('./redis');
 
-const baseUrl = "https://api.polygon.io";
-const apiKey = `apiKey=${config.get("alpaca.liveApiKey")}`;
-const ws = new WebSocket("wss://socket.polygon.io/stocks");
+const baseUrl = 'https://api.polygon.io';
+const apiKey = `apiKey=${config.get('alpaca.liveApiKey')}`;
+const ws = new WebSocket('wss://socket.polygon.io/stocks');
 
 ws.onopen = () => {
   ws.send(
     JSON.stringify({
-      action: "auth",
+      action: 'auth',
       params:
-        config.get("polygon.apiKey") !== ""
-          ? config.get("polygon.apiKey")
-          : config.get("alpaca.liveApiKey")
+        config.get('polygon.apiKey') !== ''
+          ? config.get('polygon.apiKey')
+          : config.get('alpaca.liveApiKey')
     })
   );
 };
 
-ws.onmessage = async message => {
+ws.onmessage = async (message) => {
   const data = JSON.parse(message.data)[0];
   switch (data.ev) {
-    case "T":
+    case 'T':
       redis.set(data.sym, data.p, await stocks.newTrade(data.sym));
       break;
-    case "status":
+    case 'status':
+      break;
+    default:
       break;
   }
 };
 
-const waitForOpenConnection = () => {
-  return new Promise((resolve, reject) => {
-    const maxNumberOfAttempts = 10;
-    const intervalTime = 200;
+const waitForOpenConnection = () => new Promise((resolve, reject) => {
+  const maxNumberOfAttempts = 10;
+  const intervalTime = 200;
 
-    let currentAttempt = 0;
-    const interval = setInterval(() => {
-      if (currentAttempt > maxNumberOfAttempts - 1) {
-        clearInterval(interval);
-        reject(new Error("Websocket not connecting"));
-      } else if (ws.readyState === ws.OPEN) {
-        clearInterval(interval);
-        resolve();
-      }
-      currentAttempt++;
-    }, intervalTime);
-  });
-};
+  let currentAttempt = 0;
+  const interval = setInterval(() => {
+    if (currentAttempt > maxNumberOfAttempts - 1) {
+      clearInterval(interval);
+      reject(new Error('Websocket not connecting'));
+    } else if (ws.readyState === ws.OPEN) {
+      clearInterval(interval);
+      resolve();
+    }
+    currentAttempt += 1;
+  }, intervalTime);
+});
 
-exports.sendWebhookMessage = async data => {
+exports.sendWebhookMessage = async (data) => {
   if (ws.readyState !== ws.OPEN) {
     await waitForOpenConnection();
   }
   ws.send(JSON.stringify(data));
 };
 
-exports.getTickerDetails = async symbol => {
+exports.getTickerDetails = async (symbol) => {
   try {
     const response = await axios.get(
       `${baseUrl}/v1/meta/symbols/${symbol}/company?${apiKey}`

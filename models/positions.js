@@ -10,7 +10,7 @@ class PositionsModel {
     return knex(this.tableName)
       .insert(Object.assign(data))
       .returning("*")
-      .then(rows => rows[0]);
+      .then((rows) => rows[0]);
   }
 
   async find(data) {
@@ -35,7 +35,7 @@ class PositionsModel {
       .raw(
         `SELECT exists (SELECT 1 FROM ${this.tableName} WHERE symbol = '${symbol}' LIMIT 1)`
       )
-      .then(rows => rows.rows[0].exists);
+      .then((rows) => rows.rows[0].exists);
   }
 
   async update(data) {
@@ -43,7 +43,7 @@ class PositionsModel {
       .where({ id: this.id })
       .update(data)
       .returning("*")
-      .then(rows => rows[0]);
+      .then((rows) => rows[0]);
   }
 
   async hardDelete() {

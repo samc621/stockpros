@@ -1,24 +1,24 @@
-const Joi = require("joi");
+const Joi = require('joi');
 
 const validOperands = [
-  "price",
-  "avg_entry_price",
-  "sma_50_day",
-  "sma_200_day",
-  "high_52_week",
-  "low_52_week",
-  "cagr_3_year"
+  'price',
+  'avg_entry_price',
+  'sma_50_day',
+  'sma_200_day',
+  'high_52_week',
+  'low_52_week',
+  'cagr_3_year'
 ];
 
 module.exports = {
   create: {
     body: Joi.object({
       strategy_ids: Joi.array().items(Joi.number()).optional(),
-      type: Joi.string().valid("buy", "sell").required(),
+      type: Joi.string().valid('buy', 'sell').required(),
       operand_1: Joi.string()
         .valid(...validOperands)
         .required(),
-      operator: Joi.string().valid("<=", ">=").required(),
+      operator: Joi.string().valid('<=', '>=').required(),
       percentage_difference: Joi.number().max(1).required(),
       operand_2: Joi.string()
         .valid(...validOperands)
@@ -33,7 +33,7 @@ module.exports = {
   },
   findAll: {
     query: Joi.object({
-      type: Joi.string().valid("buy", "sell").optional()
+      type: Joi.string().valid('buy', 'sell').optional()
     })
   },
   update: {
@@ -42,11 +42,11 @@ module.exports = {
     }),
     body: Joi.object({
       strategy_ids: Joi.array().items(Joi.number()).optional(),
-      type: Joi.string().valid("buy", "sell").optional(),
+      type: Joi.string().valid('buy', 'sell').optional(),
       operand_1: Joi.string()
         .valid(...validOperands)
         .optional(),
-      operator: Joi.string().valid("<=", ">=").optional(),
+      operator: Joi.string().valid('<=', '>=').optional(),
       percentage_difference: Joi.number().max(1).optional(),
       operand_2: Joi.string()
         .valid(...validOperands)

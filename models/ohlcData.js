@@ -10,18 +10,21 @@ class OHLCDataModel {
     return knex(this.tableName)
       .insert(Object.assign(data))
       .returning("*")
-      .then(rows => rows[0])
-      .catch(err => {
-        if (err.code === "23505") return null;
+      .then((rows) => rows[0])
+      .catch((err) => {
+        if (err.code === "23505") {
+          return null;
+        }
+        throw new Error(err.message);
       });
   }
 
   async find(data, fromDate, toDate) {
-    data["is_deleted"] = false;
+    data.is_deleted = false;
     return knex(this.tableName)
       .select("id", "symbol", "timestamp", "open", "high", "low", "close")
       .where(data)
-      .modify(queryBuilder => {
+      .modify((queryBuilder) => {
         if (fromDate) {
           queryBuilder.andWhere("timestamp", ">=", fromDate);
         }
@@ -33,7 +36,7 @@ class OHLCDataModel {
   }
 
   async findOne(data) {
-    data["is_deleted"] = false;
+    data.is_deleted = false;
     return knex(this.tableName)
       .select("id", "symbol", "timestamp", "open", "high", "low", "close")
       .where(data)
@@ -46,7 +49,7 @@ class OHLCDataModel {
       .raw(
         `SELECT exists (SELECT 1 FROM ${this.tableName} WHERE symbol = '${symbol}' LIMIT 1)`
       )
-      .then(rows => rows.rows[0].exists);
+      .then((rows) => rows.rows[0].exists);
   }
 
   async update(data) {
@@ -54,7 +57,7 @@ class OHLCDataModel {
       .where({ id: this.id })
       .update(data)
       .returning("*")
-      .then(rows => rows[0]);
+      .then((rows) => rows[0]);
   }
 
   async hardDelete() {

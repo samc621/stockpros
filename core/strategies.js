@@ -1,4 +1,4 @@
-const alpaca = require("../services/alpaca");
+const alpaca = require('../services/alpaca');
 
 class StrategyInstance {
   constructor(buySignals, sellSignals, buyQuantity, sellQuantity) {
@@ -13,9 +13,11 @@ class StrategyInstance {
       if (this.sellSignals) {
         const quantity = this.sellQuantity;
         if (!backtest && (await alpaca.isMarketOpen())) {
-          console.log("sell ==> ", symbol, quantity);
-          return await alpaca.createOrder(symbol, quantity, "sell");
-        } else if (backtest) {
+          console.log('sell ==> ', symbol, quantity);
+          return await alpaca.createOrder(symbol, quantity, 'sell');
+        }
+
+        if (backtest) {
           return {
             date,
             quantity: quantity * -1,
@@ -26,9 +28,11 @@ class StrategyInstance {
       } else if (this.buySignals) {
         const quantity = this.buyQuantity;
         if (!backtest && (await alpaca.isMarketOpen())) {
-          console.log("buy ==> ", symbol, quantity);
-          return await alpaca.createOrder(symbol, quantity, "buy");
-        } else if (backtest) {
+          console.log('buy ==> ', symbol, quantity);
+          return await alpaca.createOrder(symbol, quantity, 'buy');
+        }
+
+        if (backtest) {
           return {
             date,
             quantity,

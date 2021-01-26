@@ -1,6 +1,7 @@
-const express = require("express");
+const express = require('express');
+const { validate } = require('express-validation');
+
 const router = express.Router();
-const { validate } = require("express-validation");
 
 const {
   createSignal,
@@ -8,16 +9,22 @@ const {
   getSignals,
   updateSignal,
   deleteSignal
-} = require("./controller");
-const { create, findOne, findAll, update, deleted } = require("./validation");
+} = require('./controller');
+const {
+  create,
+  findOne,
+  findAll,
+  update,
+  deleted
+} = require('./validation');
 
 router
-  .route("/")
+  .route('/')
   .post(validate(create), createSignal)
   .get(validate(findAll), getSignals);
 
 router
-  .route("/:id")
+  .route('/:id')
   .get(validate(findOne), getSignal)
   .patch(validate(update), updateSignal)
   .delete(validate(deleted), deleteSignal);

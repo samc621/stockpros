@@ -1,16 +1,16 @@
 exports.up = function (knex) {
-  return knex.schema.createTable("ticker_technicals", table => {
-    table.increments(),
-      table.integer("ticker_id").unsigned(),
-      table.foreign("ticker_id").references("tickers.id"),
-      table.decimal("sma_50_day"),
-      table.decimal("sma_200_day"),
-      table.decimal("high_52_week"),
-      table.decimal("low_52_week"),
-      table.decimal("cagr_3_year", 8, 4),
-      table.timestamp("created_at").defaultTo(knex.fn.now()),
-      table.timestamp("updated_at").defaultTo(knex.fn.now()),
-      table.boolean("is_deleted").defaultTo(false);
+  return knex.schema.createTable("ticker_technicals", (table) => {
+    table.increments();
+    table.integer("ticker_id").unsigned();
+    table.foreign("ticker_id").references("tickers.id");
+    table.decimal("sma_50_day");
+    table.decimal("sma_200_day");
+    table.decimal("high_52_week");
+    table.decimal("low_52_week");
+    table.decimal("cagr_3_year", 8, 4);
+    table.timestamp("created_at").defaultTo(knex.fn.now());
+    table.timestamp("updated_at").defaultTo(knex.fn.now());
+    table.boolean("is_deleted").defaultTo(false);
   });
 };
 

@@ -10,7 +10,7 @@ class SignalsModel {
     return knex(this.tableName)
       .insert(Object.assign(data))
       .returning("*")
-      .then(rows => rows[0]);
+      .then((rows) => rows[0]);
   }
 
   async find(data) {
@@ -51,7 +51,7 @@ class SignalsModel {
       .where({ id: this.id })
       .update(data)
       .returning("*")
-      .then(rows => rows[0]);
+      .then((rows) => rows[0]);
   }
 
   async hardDelete() {

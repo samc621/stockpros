@@ -1,4 +1,4 @@
-const Joi = require("joi");
+const Joi = require('joi');
 
 module.exports = {
   create: {
@@ -6,11 +6,11 @@ module.exports = {
       name: Joi.string().allow(null).optional(),
       buy_percentage: Joi.number().max(1).required(),
       buy_percentage_type_of: Joi.string()
-        .valid("equity", "buying_power")
+        .valid('equity', 'buying_power')
         .required(),
       sell_percentage: Joi.number().max(1).required(),
       sell_percentage_type_of: Joi.string()
-        .valid("qty", "cost_basis")
+        .valid('qty', 'cost_basis')
         .required(),
       is_active: Joi.boolean().allow(null).optional()
     })
@@ -34,11 +34,11 @@ module.exports = {
       name: Joi.string().allow(null).optional(),
       buy_percentage: Joi.number().max(1).optional(),
       buy_percentage_type_of: Joi.string()
-        .valid("equity", "buying_power")
+        .valid('equity', 'buying_power')
         .optional(),
       sell_percentage: Joi.number().max(1).optional(),
       sell_percentage_type_of: Joi.string()
-        .valid("qty", "cost_basis")
+        .valid('qty', 'cost_basis')
         .optional(),
       is_active: Joi.boolean().allow(null).optional()
     })

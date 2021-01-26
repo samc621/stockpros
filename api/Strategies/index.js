@@ -1,6 +1,7 @@
-const express = require("express");
+const express = require('express');
+const { validate } = require('express-validation');
+
 const router = express.Router();
-const { validate } = require("express-validation");
 
 const {
   createStrategy,
@@ -9,7 +10,7 @@ const {
   updateStrategy,
   deleteStrategy,
   backtestStrategy
-} = require("./controller");
+} = require('./controller');
 const {
   create,
   findOne,
@@ -17,17 +18,17 @@ const {
   update,
   deleted,
   backtest
-} = require("./validation");
+} = require('./validation');
 
 router
-  .route("/")
+  .route('/')
   .post(validate(create), createStrategy)
   .get(validate(findAll), getStrategies);
 
-router.route("/:id/backtest").post(validate(backtest), backtestStrategy);
+router.route('/:id/backtest').post(validate(backtest), backtestStrategy);
 
 router
-  .route("/:id")
+  .route('/:id')
   .get(validate(findOne), getStrategy)
   .patch(validate(update), updateStrategy)
   .delete(validate(deleted), deleteStrategy);

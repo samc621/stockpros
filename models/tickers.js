@@ -10,11 +10,11 @@ class TickersModel {
     return knex(this.tableName)
       .insert(Object.assign(data))
       .returning("*")
-      .then(rows => rows[0]);
+      .then((rows) => rows[0]);
   }
 
   async find(data) {
-    data["is_deleted"] = false;
+    data.is_deleted = false;
     return knex(this.tableName)
       .select(
         "id",
@@ -32,7 +32,7 @@ class TickersModel {
   }
 
   async findOne(data) {
-    data["is_deleted"] = false;
+    data.is_deleted = false;
     return knex(this.tableName)
       .select(
         "id",
@@ -55,7 +55,7 @@ class TickersModel {
       .where({ id: this.id })
       .update(data)
       .returning("*")
-      .then(rows => rows[0]);
+      .then((rows) => rows[0]);
   }
 
   async checkIfTickerExists(symbol) {
@@ -63,7 +63,7 @@ class TickersModel {
       .raw(
         `SELECT exists (SELECT 1 FROM ${this.tableName} WHERE symbol = '${symbol}' LIMIT 1)`
       )
-      .then(rows => rows.rows[0].exists);
+      .then((rows) => rows.rows[0].exists);
   }
 
   async hardDelete() {

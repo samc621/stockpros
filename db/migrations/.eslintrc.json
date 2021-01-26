@@ -1,0 +1,30 @@
+{
+    "extends": "airbnb-base",
+    "root": false,
+    "env": {
+        "node": true,
+        "es6": true
+    },
+    "rules": {
+        "max-len": [
+            "warn",
+            140
+        ],
+        "no-console": "off",
+        "comma-dangle": [
+            "error",
+            "never"
+        ],
+        "camelcase": "off",
+        "no-unused-vars": "warn",
+        "no-eval": "warn",
+        "no-return-assign": [
+            "error",
+            "except-parens"
+        ],
+        "no-param-reassign": "off",
+        "no-nested-ternary": "off",
+        "func-names": "off",
+        "quotes": ["off", "double"]
+    }
+}

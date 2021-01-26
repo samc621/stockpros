@@ -10,7 +10,7 @@ class TickerTechnicalsModel {
     return knex(this.tableName)
       .insert(Object.assign(data))
       .returning("*")
-      .then(rows => rows[0]);
+      .then((rows) => rows[0]);
   }
 
   async find(data) {
@@ -53,7 +53,7 @@ class TickerTechnicalsModel {
       .where({ id: this.id })
       .update(data)
       .returning("*")
-      .then(rows => rows[0]);
+      .then((rows) => rows[0]);
   }
 
   async hardDelete() {
