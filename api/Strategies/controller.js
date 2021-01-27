@@ -33,7 +33,7 @@ exports.getStrategies = async (req, res) => {
   try {
     const strategies = await new Strategy().find(req.query);
 
-    return response.Ok(res, 'Strategyes successfully found', strategies);
+    return response.Ok(res, 'Strategies successfully found', strategies);
   } catch (err) {
     console.error(err.message);
     return response.InternalServerError(res, err.message);
