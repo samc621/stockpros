@@ -5,5 +5,5 @@ exports.seed = (knex) => knex('strategy_signals').del().then(() => knex('strateg
     buy_percentage: 0.7,
     buy_percentage_type_of: 'buying_power',
     sell_percentage: 1,
-    sell_percentage_type_of: 'qty'
+    sell_percentage_type_of: 'quantity'
   })));

@@ -16,7 +16,7 @@ class PositionsModel {
   async find(data) {
     data["positions.is_deleted"] = false;
     return knex(this.tableName)
-      .select("id", "symbol", "quantity")
+      .select("id", "symbol", "quantity", "avg_entry_price", "cost_basis")
       .where(data)
       .orderBy("positions.created_at", "asc");
   }
@@ -24,7 +24,7 @@ class PositionsModel {
   async findOne(data) {
     data["positions.is_deleted"] = false;
     return knex(this.tableName)
-      .select("id", "symbol", "quantity")
+      .select("id", "symbol", "quantity", "avg_entry_price", "cost_basis")
       .where(data)
       .orderBy("positions.created_at", "asc")
       .first();

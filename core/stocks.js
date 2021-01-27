@@ -242,10 +242,7 @@ exports.newTrade = async (symbol) => {
         return;
       }
 
-      let position = null;
-      if (await new Position().checkIfPositionExists(symbol)) {
-        position = await alpaca.getPositionForSymbol(symbol);
-      }
+      const position = await new Position().findOne({ symbol });
 
       const avg_entry_price = position ? position.avg_entry_price : null;
       const {
@@ -417,12 +414,12 @@ exports.backtest = async (strategyId, symbol, years, startValue) => {
           sellQuantity
         ).executeStrategy(symbol, agg.close, true, calcs.date);
         if (trade) {
-          const oldQty = status.position ? status.position.qty : 0;
+          const oldQty = status.position ? status.position.quantity : 0;
           const newQty = (oldQty + trade.quantity);
           status.position = newQty > 0
             ? {
               avg_entry_price: trade.price,
-              qty: newQty,
+              quantity: newQty,
               cost_basis: trade.value
             }
             : null;
@@ -457,7 +454,7 @@ exports.backtest = async (strategyId, symbol, years, startValue) => {
     const losingTrades = profitableTrades - winningTrades;
     const winRate = winningTrades / profitableTrades;
 
-    const endValue = (result.position ? result.position.qty : 0)
+    const endValue = (result.position ? result.position.quantity : 0)
       * aggregates[aggregates.length - 1].close
       + result.account.buying_power;
 

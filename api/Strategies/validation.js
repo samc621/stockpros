@@ -10,7 +10,7 @@ module.exports = {
         .required(),
       sell_percentage: Joi.number().max(1).required(),
       sell_percentage_type_of: Joi.string()
-        .valid('qty', 'cost_basis')
+        .valid('quantity', 'cost_basis')
         .required(),
       is_active: Joi.boolean().allow(null).optional()
     })
@@ -38,7 +38,7 @@ module.exports = {
         .optional(),
       sell_percentage: Joi.number().max(1).optional(),
       sell_percentage_type_of: Joi.string()
-        .valid('qty', 'cost_basis')
+        .valid('quantity', 'cost_basis')
         .optional(),
       is_active: Joi.boolean().allow(null).optional()
     })

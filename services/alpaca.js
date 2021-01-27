@@ -24,6 +24,8 @@ ws.onOrderUpdate(async (message) => {
   const { order } = message;
   const { side, symbol } = order;
   const qty = Number(order.qty);
+  const avg_entry_price = order.filled_avg_price;
+  const cost_basis = qty * avg_entry_price;
   console.log(`${side} fill ===> `, symbol, qty);
 
   const position = await new Position().findOne({ symbol });
@@ -34,7 +36,12 @@ ws.onOrderUpdate(async (message) => {
     if (position) {
       await new Position(position.id).update({ quantity });
     } else {
-      await new Position().create({ symbol, quantity });
+      await new Position().create({
+        symbol,
+        quantity,
+        avg_entry_price,
+        cost_basis
+      });
     }
   } else if (side === 'sell') {
     quantity = position.quantity - qty;

@@ -25,6 +25,10 @@
         "no-param-reassign": "off",
         "no-nested-ternary": "off",
         "func-names": "off",
-        "quotes": ["off", "double"]
+        "quotes": [
+            "off",
+            "double"
+        ],
+        "indent": "off"
     }
 }
