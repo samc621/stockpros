@@ -25,9 +25,11 @@ ws.onmessage = async (message) => {
   const data = JSON.parse(message.data)[0];
   switch (data.ev) {
     case 'T':
-      redis.set(data.sym, data.p, await stocks.newTrade(data.sym));
-      break;
-    case 'status':
+      redis.get(data.sym, async (error, price) => {
+        if (price !== 'PENDING ORDER') {
+          redis.set(data.sym, data.p, await stocks.newTrade(data.sym));
+        }
+      });
       break;
     default:
       break;
