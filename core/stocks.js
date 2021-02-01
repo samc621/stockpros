@@ -153,7 +153,7 @@ const scheduleDailyStockUpdate = (symbol) => {
   rule.hour = 16;
   rule.minute = 0;
   rule.dayOfWeek = [new schedule.Range(1, 5)];
-  rule.tz = 'US';
+  rule.tz = 'America/New_York';
 
   schedule.scheduleJob(rule, async () => dailyStockUpdate(symbol));
 };
