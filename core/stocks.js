@@ -149,7 +149,13 @@ const dailyStockUpdate = async (symbol) => {
 };
 
 const scheduleDailyStockUpdate = (symbol) => {
-  schedule.scheduleJob('0 16 * * 1-5', async () => dailyStockUpdate(symbol));
+  const rule = new schedule.RecurrenceRule();
+  rule.hour = 16;
+  rule.minute = 0;
+  rule.dayOfWeek = [new schedule.Range(1, 5)];
+  rule.tz = 'US';
+
+  schedule.scheduleJob(rule, async () => dailyStockUpdate(symbol));
 };
 
 const loadTicker = async (symbol) => {
