@@ -24,7 +24,7 @@ const Strategy = require('../models/strategies');
 const WatchedSymbols = require('../models/watchedSymbols');
 
 const getTrades = (symbol) => {
-  polygon.sendWebhookMessage({ action: 'subscribe', params: `T.${symbol}` });
+  polygon.sendWebhookMessage({ action: 'subscribe', params: `A.${symbol}` });
 };
 
 const stockCalcs = async (dt, symbol) => {
