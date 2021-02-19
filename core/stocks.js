@@ -87,13 +87,20 @@ const stockCalcs = async (dt, symbol) => {
     );
 
     const data = {
-      date,
       sma_50_day,
       sma_200_day,
       high_52_week,
       low_52_week,
       cagr_3_year
     };
+
+    Object.entries(data).forEach(([key, value]) => {
+      if (Number.isNaN(value)) {
+        throw new Error(`The ${key} value for ${symbol} is ${value}, which is NaN.`);
+      }
+    });
+
+    data.date = date;
 
     return data;
   } catch (err) {
