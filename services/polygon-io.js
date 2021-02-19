@@ -23,6 +23,7 @@ ws.onopen = () => {
 
 ws.onmessage = async (message) => {
   const data = JSON.parse(message.data)[0];
+  console.log(data);
   switch (data.ev) {
     case 'A':
       redis.get(data.sym, async (error, price) => {
